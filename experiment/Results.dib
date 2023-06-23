@@ -1,0 +1,54 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
+#!fsharp
+
+#r "nuget: SimpleImageIO"
+open SimpleImageIO
+HTML(FlipBook.Header).Display() |> ignore
+
+#!markdown
+
+# Equal sample comparison: path guiding vs vanilla VCM
+
+#!markdown
+
+### Render times in seconds for 128spp
+
+#!fsharp
+
+let renderTime method =
+    let json = System.IO.File.ReadAllText($"Results/RoughGlassesIndirect/{method}/Render.json")
+    let doc = System.Text.Json.JsonDocument.Parse(json)
+    doc.RootElement.GetProperty("RenderTime").GetDouble()
+Map [
+    ("Path tracing", 0.001 * renderTime "PathTracer")
+    ("Guided path tracing", 0.001 * renderTime "GuidedPathTracer")
+    ("Root adaptive path tracing", 0.001 * renderTime "RootAdaptivePathTracer")
+]
+
+#!markdown
+
+### Rendered images
+
+#!fsharp
+
+FlipBook.New
+    .Add("Path tracing", new RgbImage("Results/RoughGlassesIndirect/PathTracer/Render.exr"))
+    .Add("Guided path tracing", new RgbImage("Results/RoughGlassesIndirect/GuidedPathTracer/Render.exr"))
+    .Add("Root adaptive path tracing", new RgbImage("Results/RoughGlassesIndirect/RootAdaptivePathTracer/Render.exr"))
+|> HTML
+
+#!markdown
+
+### False-color error images
+
+#!fsharp
+
+FlipBook.New
+    .WithToneMapper(FlipBook.InitialTMO.FalseColor(0.0f, 0.1f, false))
+    .Add("Path tracing", Metrics.RelMSEImage(new RgbImage("Results/RoughGlassesIndirect/PathTracer/Render.exr"), new RgbImage("Results/RoughGlassesIndirect/Reference.exr")))
+    .Add("Guided path tracing", Metrics.RelMSEImage(new RgbImage("Results/RoughGlassesIndirect/GuidedPathTracer/Render.exr"), new RgbImage("Results/RoughGlassesIndirect/Reference.exr")))
+    .Add("Root adaptive path tracing", Metrics.RelMSEImage(new RgbImage("Results/RoughGlassesIndirect/RootAdaptivePathTracer/Render.exr"), new RgbImage("Results/RoughGlassesIndirect/Reference.exr")))
+|> HTML
