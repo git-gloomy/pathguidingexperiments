@@ -16,44 +16,51 @@ namespace GuidedPathTracerExperiments.Integrators {
     public class RootAdaptivePathSegmentStorage {
 
         
-        Queue<RootAdaptivePathSegment> segments = new Queue<RootAdaptivePathSegment>();
+        List<RootAdaptivePathSegment> segments = new List<RootAdaptivePathSegment>();
         public RootAdaptivePathSegment LastSegment { get; set; }
 
         public RootAdaptivePathSegment NextSegment() {
             var segment = new RootAdaptivePathSegment();
-            segments.Enqueue(segment);
-            lastSegment = segment;
+            segments.Add(segment);
+            LastSegment = segment;
             return segment;
         }
 
         public void Clear() {
-            lastSegment = null;
+            LastSegment = null;
             segments.Clear();
         }
 
-        public void EvaluatePath(RootAdaptiveProbabilityTree tree, RgbColor outgoing) {
-            lastSegment = null;
-            RgbColor avoidNaN = new(
-                outgoing.R == 0.0f ? 1.0f : 0.0f,
-                outgoing.G == 0.0f ? 1.0f : 0.0f,
-                outgoing.B == 0.0f ? 1.0f : 0.0f
-            );
-            for (int i = 0; i < int.Min(segments.Count, 1); i++) {
-                var segment = segments.Dequeue();
+        public void EvaluatePath(RootAdaptiveProbabilityTree tree) {
+            for (int i = segments.Count - 2; i >= 0; i--) {
+                var segment = segments[i];
 
-                if(segment.UseForLearning && segment.GuidePdf != 0 && segment.BsdfPdf != 0)                
-                    tree.AddSampleData(
-                        segment.Position, 
-                        segment.GuidePdf,
-                        segment.BsdfPdf, 
-                        outgoing
-                    );
-    
-                // If outgoing has a zero, that means that at least one of the contrib values has to
-                // be zero. We add one to the respective before dividing in that case, so that we do
-                // not end up with NaN and get zero instead
-                outgoing /= (segment.Contrib + avoidNaN);  
+                if(segment.UseForLearning && segment.GuidePdf != 0 && segment.BsdfPdf != 0) {
+                    RgbColor throughput = new RgbColor(1.0f);
+                    RgbColor contrib = new RgbColor(0.0f);
+
+                    for (int j = i+1; j < segments.Count; j++) {
+                        var nextSegment = segments[j];
+
+                        contrib += throughput * nextSegment.ScatteredContribution;
+                        
+                        if(j == i+1) contrib += throughput * nextSegment.DirectContribution;
+                        else contrib += throughput * nextSegment.MisWeight * nextSegment.DirectContribution;
+
+                        throughput = throughput * nextSegment.ScatteringWeight;
+                    }
+
+                    if (contrib.R > 0.0f || contrib.G > 0.0f || contrib.B > 0.0f) {
+                        tree.AddSampleData(
+                            segment.Position, 
+                            segment.GuidePdf,
+                            segment.BsdfPdf, 
+                            contrib
+                        );
+                    }
+                }
             }
+            Clear();
         }
     }
 }

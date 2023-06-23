@@ -28,9 +28,9 @@ public class Experiment : SeeSharp.Experiments.Experiment {
             TotalSpp = numSamples,
             MaximumRenderTimeMs = maxTime,
             NumShadowRays = 1,
-            ProbabilityLearningInterval = 64,
+            ProbabilityLearningInterval = 32,
             InitialGuidingProbability = 0.5f,
-            ProbabilityTreeSplitMargin = 50000,
+            ProbabilityTreeSplitMargin = 10000,
         })
     };
 }
