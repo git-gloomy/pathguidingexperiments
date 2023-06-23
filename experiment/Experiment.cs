@@ -14,20 +14,21 @@ public class Experiment : SeeSharp.Experiments.Experiment {
     }
 
     public override List<Method> MakeMethods() => new() {
-        //new("PathTracer", new PathTracer() {
-        //    TotalSpp = numSamples,
-        //    MaximumRenderTimeMs = maxTime,
-        //    NumShadowRays = 1,
-        //}),
-        //new("GuidedPathTracer", new GuidedPathTracer() {
-        //    TotalSpp = numSamples,
-        //    MaximumRenderTimeMs = maxTime,
-        //    NumShadowRays = 1,
-        //}),
+        new("PathTracer", new PathTracer() {
+            TotalSpp = numSamples,
+            MaximumRenderTimeMs = maxTime,
+            NumShadowRays = 1,
+        }),
+        new("GuidedPathTracer", new GuidedPathTracer() {
+            TotalSpp = numSamples,
+            MaximumRenderTimeMs = maxTime,
+            NumShadowRays = 1,
+        }),
         new("RootAdaptivePathTracer", new RootAdaptiveGuidedPathTracer() {
             TotalSpp = numSamples,
             MaximumRenderTimeMs = maxTime,
             NumShadowRays = 1,
+            IncludeDebugVisualizations = true,
             ProbabilityLearningInterval = 32,
             InitialGuidingProbability = 0.5f,
             ProbabilityTreeSplitMargin = 10000,

@@ -11,6 +11,8 @@ using SimpleImageIO;
 using TinyEmbree;
 using GuidedPathTracerExperiments.ProbabilityTrees;
 using System.IO;
+using SeeSharp;
+using SeeSharp.Sampling;
 
 namespace GuidedPathTracerExperiments.Integrators {
 
@@ -39,14 +41,34 @@ namespace GuidedPathTracerExperiments.Integrators {
         /// </summary>
         public bool WriteIterationsAsLayers { get; set; }
 
+        /// <summary>
+        /// If set to true, the probabilities and incident radiance stored in the probabilityTree
+        /// will be rendered as layers in the .exr.
+        /// </summary>
+        public bool IncludeDebugVisualizations { get; set; }
+
+        /// <summary>
+        /// Determines after how many iterations the guiding probabilities are reevaluated
+        /// </summary>
         public uint ProbabilityLearningInterval { get; set; }
 
+        /// <summary>
+        /// Determines the probability to use path guided sampling instead of BSDF sampling at the
+        /// start of the rendering process.
+        /// </summary>
         public float InitialGuidingProbability { get; set; }
 
+        /// <summary>
+        /// Determines how many samples have to be gathered in a leaf of the probabilityTree before
+        /// it is split up.
+        /// </summary>
         public uint ProbabilityTreeSplitMargin { get; set; }
 
         List<SingleIterationLayer> iterationRenderings = new();
         List<SingleIterationLayer> iterationCacheVisualizations = new();
+
+        List<SingleIterationLayer> incidentRadianceVisualizations = new();
+        List<SingleIterationLayer> guidingProbabilityVisualizations = new();
 
         public override void RegisterSample(Pixel pixel, RgbColor weight, float misWeight, uint depth,
                                             bool isNextEvent) {
@@ -82,7 +104,7 @@ namespace GuidedPathTracerExperiments.Integrators {
                 lower, upper, 
                 ProbabilityTreeSplitMargin
                 );
-            
+        
 
             // Add additional frame buffer layers
             if (WriteIterationsAsLayers) {
@@ -94,6 +116,15 @@ namespace GuidedPathTracerExperiments.Integrators {
                 }
             }
 
+            if (IncludeDebugVisualizations) {
+                for (uint i = ProbabilityLearningInterval; i < TotalSpp; i += ProbabilityLearningInterval) {
+                    incidentRadianceVisualizations.Add(new());
+                    guidingProbabilityVisualizations.Add(new());
+                    scene.FrameBuffer.AddLayer($"learnedRadiance{i:0000}", incidentRadianceVisualizations[^1]);
+                    scene.FrameBuffer.AddLayer($"guidingProbability{i:0000}", guidingProbabilityVisualizations[^1]);
+                }
+            }
+
             base.OnPrepareRender();
         }
 
@@ -101,13 +132,10 @@ namespace GuidedPathTracerExperiments.Integrators {
             GuidingField.Update(sampleStorage, 1);
             sampleStorage.Clear();
 
-            uint iterationsSinceUpdate = iterIdx % ProbabilityLearningInterval;
             // Update mixture ratio every ProbabilityLearningInterval iterations
-            if(iterationsSinceUpdate == 0 && iterIdx != 0) {
+            uint iterationsSinceUpdate = (iterIdx + 1) % ProbabilityLearningInterval;
+            if(iterationsSinceUpdate == 0) {
                 probabilityTree.LearnProbabilities();
-                DirectoryInfo directory = new("Results/CornellBox/RootAdaptivePathTracer/");
-                ProbabilityTreeVisualizer visualizer = new(probabilityTree, directory.FullName + "guidingprobabilities" + iterIdx / ProbabilityLearningInterval + ".exr");
-                visualizer.Render(this.scene);
             }
 
             GuidingEnabled = true;
@@ -153,6 +181,27 @@ namespace GuidedPathTracerExperiments.Integrators {
                     iterationCacheVisualizations[scene.FrameBuffer.CurIteration - 1]
                         .Splat(state.Pixel.Row, state.Pixel.Col, color);
                 }
+            }
+
+
+            int curIteration = scene.FrameBuffer.CurIteration - 1;
+            if (IncludeDebugVisualizations && state.Depth == 1) {
+                uint iterationsSinceUpdate = (uint) curIteration % ProbabilityLearningInterval;
+                // Update mixture ratio every ProbabilityLearningInterval iterations
+                if(iterationsSinceUpdate == 0 && curIteration != 0) {
+                    float p = probabilityTree.GetProbability(hit.Position);
+                    RgbColor probabilityColor = new RgbColor(
+                        hit ? p : 0, 
+                        hit ? 0.5f - float.Abs(p - 0.5f) : 0, 
+                        hit ? 1.0f - p : 0
+                    );
+                    guidingProbabilityVisualizations[(int) (curIteration / ProbabilityLearningInterval) - 1]
+                        .Splat(state.Pixel.Col, state.Pixel.Row, probabilityColor);
+
+                    RgbColor incidentRadiance = probabilityTree.GetAvgColor(hit.Position);
+                    incidentRadianceVisualizations[(int) (curIteration / ProbabilityLearningInterval) - 1]
+                        .Splat(state.Pixel.Col, state.Pixel.Row, incidentRadiance);
+                }                
             }
         }
 

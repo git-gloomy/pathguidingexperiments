@@ -19,7 +19,7 @@ HTML(FlipBook.Header).Display() |> ignore
 #!fsharp
 
 let renderTime method =
-    let json = System.IO.File.ReadAllText($"Results/RoughGlassesIndirect/{method}/Render.json")
+    let json = System.IO.File.ReadAllText($"Results/Pool/{method}/Render.json")
     let doc = System.Text.Json.JsonDocument.Parse(json)
     doc.RootElement.GetProperty("RenderTime").GetDouble()
 Map [
@@ -35,9 +35,9 @@ Map [
 #!fsharp
 
 FlipBook.New
-    .Add("Path tracing", new RgbImage("Results/RoughGlassesIndirect/PathTracer/Render.exr"))
-    .Add("Guided path tracing", new RgbImage("Results/RoughGlassesIndirect/GuidedPathTracer/Render.exr"))
-    .Add("Root adaptive path tracing", new RgbImage("Results/RoughGlassesIndirect/RootAdaptivePathTracer/Render.exr"))
+    .Add("Path tracing", new RgbImage("Results/Pool/PathTracer/Render.exr"))
+    .Add("Guided path tracing", new RgbImage("Results/Pool/GuidedPathTracer/Render.exr"))
+    .Add("Root adaptive path tracing", new RgbImage("Results/Pool/RootAdaptivePathTracer/Render.exr"))
 |> HTML
 
 #!markdown
@@ -48,7 +48,7 @@ FlipBook.New
 
 FlipBook.New
     .WithToneMapper(FlipBook.InitialTMO.FalseColor(0.0f, 0.1f, false))
-    .Add("Path tracing", Metrics.RelMSEImage(new RgbImage("Results/RoughGlassesIndirect/PathTracer/Render.exr"), new RgbImage("Results/RoughGlassesIndirect/Reference.exr")))
-    .Add("Guided path tracing", Metrics.RelMSEImage(new RgbImage("Results/RoughGlassesIndirect/GuidedPathTracer/Render.exr"), new RgbImage("Results/RoughGlassesIndirect/Reference.exr")))
-    .Add("Root adaptive path tracing", Metrics.RelMSEImage(new RgbImage("Results/RoughGlassesIndirect/RootAdaptivePathTracer/Render.exr"), new RgbImage("Results/RoughGlassesIndirect/Reference.exr")))
+    .Add("Path tracing", Metrics.RelMSEImage(new RgbImage("Results/Pool/PathTracer/Render.exr"), new RgbImage("Results/Pool/Reference.exr")))
+    .Add("Guided path tracing", Metrics.RelMSEImage(new RgbImage("Results/Pool/GuidedPathTracer/Render.exr"), new RgbImage("Results/Pool/Reference.exr")))
+    .Add("Root adaptive path tracing", Metrics.RelMSEImage(new RgbImage("Results/Pool/RootAdaptivePathTracer/Render.exr"), new RgbImage("Results/Pool/Reference.exr")))
 |> HTML
