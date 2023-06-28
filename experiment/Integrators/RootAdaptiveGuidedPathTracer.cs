@@ -16,6 +16,17 @@ using SeeSharp.Sampling;
 
 namespace GuidedPathTracerExperiments.Integrators {
 
+    class SquarerootWeightedLayer : RgbLayer {
+        public override void OnStartIteration(int curIteration) {
+            if (curIteration > 1)
+                Image.Scale(1.0f - (1.0f / float.Sqrt(curIteration)));
+            this.curIteration = curIteration;
+        }
+
+        public override void Splat(int x, int y, RgbColor value)
+        => (Image as RgbImage).AtomicAdd((int)x, (int)y, value / float.Sqrt(curIteration));
+    }
+
     public class RootAdaptiveGuidedPathTracer : PathTracer {
         // Utility used to keep track of all data needed to build SampleData during path generation
         protected ThreadLocal<PathSegmentStorage> pathSegmentStorage = new();
@@ -70,6 +81,8 @@ namespace GuidedPathTracerExperiments.Integrators {
         List<SingleIterationLayer> incidentRadianceVisualizations = new();
         List<SingleIterationLayer> guidingProbabilityVisualizations = new();
 
+        SquarerootWeightedLayer sqrtWeightedRender = new();
+
         public override void RegisterSample(Pixel pixel, RgbColor weight, float misWeight, uint depth,
                                             bool isNextEvent) {
             base.RegisterSample(pixel, weight, misWeight, depth, isNextEvent);
@@ -104,9 +117,10 @@ namespace GuidedPathTracerExperiments.Integrators {
                 lower, upper, 
                 ProbabilityTreeSplitMargin
                 );
-        
 
             // Add additional frame buffer layers
+            scene.FrameBuffer.AddLayer("sqrtWeightedSamples", sqrtWeightedRender);
+
             if (WriteIterationsAsLayers) {
                 for (int i = 0; i < TotalSpp; ++i) {
                     iterationRenderings.Add(new());
@@ -139,6 +153,26 @@ namespace GuidedPathTracerExperiments.Integrators {
             }
 
             GuidingEnabled = true;
+        }
+
+        protected override void RenderPixel(uint row, uint col, RNG rng) {
+            // Sample a ray from the camera
+            var offset = rng.NextFloat2D();
+            var pixel = new Vector2(col, row) + offset;
+            Ray primaryRay = scene.Camera.GenerateRay(pixel, rng).Ray;
+
+            var state = MakePathState();
+            state.Pixel = new((int)col, (int)row);
+            state.Rng = rng;
+            state.Throughput = RgbColor.White;
+            state.Depth = 1;
+
+            OnStartPath(state);
+            var estimate = EstimateIncidentRadiance(primaryRay, state);
+            OnFinishedPath(estimate, state);
+
+            scene.FrameBuffer.Splat(state.Pixel, estimate.Outgoing);
+            sqrtWeightedRender.Splat(state.Pixel, estimate.Outgoing);
         }
 
         protected override void OnStartPath(PathState state) {
