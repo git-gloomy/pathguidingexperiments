@@ -10,23 +10,12 @@ using SeeSharp.Images;
 using SimpleImageIO;
 using TinyEmbree;
 using GuidedPathTracerExperiments.ProbabilityTrees;
-using System.IO;
-using SeeSharp;
 using SeeSharp.Sampling;
 
 namespace GuidedPathTracerExperiments.Integrators {
 
-    class SquarerootWeightedLayer : RgbLayer {
-        public override void OnStartIteration(int curIteration) {
-            if (curIteration > 1)
-                Image.Scale(1.0f - (1.0f / float.Sqrt(curIteration)));
-            this.curIteration = curIteration;
-        }
-
-        public override void Splat(int x, int y, RgbColor value)
-        => (Image as RgbImage).AtomicAdd((int)x, (int)y, value / float.Sqrt(curIteration));
-    }
-
+    // Based on Optimal Deterministic Mixture Sampling by Sbert et al.
+    // (see: https://diglib.eg.org/handle/10.2312/egs20191018)
     public class RootAdaptiveGuidedPathTracer : PathTracer {
         // Utility used to keep track of all data needed to build SampleData during path generation
         protected ThreadLocal<PathSegmentStorage> pathSegmentStorage = new();
@@ -61,7 +50,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         /// <summary>
         /// Determines after how many iterations the guiding probabilities are reevaluated
         /// </summary>
-        public uint ProbabilityLearningInterval { get; set; }
+        public int ProbabilityLearningInterval { get; set; }
 
         /// <summary>
         /// Determines the probability to use path guided sampling instead of BSDF sampling at the
@@ -73,7 +62,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         /// Determines how many samples have to be gathered in a leaf of the probabilityTree before
         /// it is split up.
         /// </summary>
-        public uint ProbabilityTreeSplitMargin { get; set; }
+        public int ProbabilityTreeSplitMargin { get; set; }
 
         List<SingleIterationLayer> iterationRenderings = new();
         List<SingleIterationLayer> iterationCacheVisualizations = new();
@@ -81,7 +70,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         List<SingleIterationLayer> incidentRadianceVisualizations = new();
         List<SingleIterationLayer> guidingProbabilityVisualizations = new();
 
-        SquarerootWeightedLayer sqrtWeightedRender = new();
+        SquarerootWeightedLayer sqrtWeightedRender;
 
         public override void RegisterSample(Pixel pixel, RgbColor weight, float misWeight, uint depth,
                                             bool isNextEvent) {
@@ -116,9 +105,10 @@ namespace GuidedPathTracerExperiments.Integrators {
                 InitialGuidingProbability, 
                 lower, upper, 
                 ProbabilityTreeSplitMargin
-                );
+            );
 
             // Add additional frame buffer layers
+            sqrtWeightedRender = new(ProbabilityLearningInterval);
             scene.FrameBuffer.AddLayer("sqrtWeightedSamples", sqrtWeightedRender);
 
             if (WriteIterationsAsLayers) {
@@ -131,7 +121,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             }
 
             if (IncludeDebugVisualizations) {
-                for (uint i = ProbabilityLearningInterval; i < TotalSpp; i += ProbabilityLearningInterval) {
+                for (int i = ProbabilityLearningInterval; i < TotalSpp; i += ProbabilityLearningInterval) {
                     incidentRadianceVisualizations.Add(new());
                     guidingProbabilityVisualizations.Add(new());
                     scene.FrameBuffer.AddLayer($"learnedRadiance{i:0000}", incidentRadianceVisualizations[^1]);
@@ -147,7 +137,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             sampleStorage.Clear();
 
             // Update mixture ratio every ProbabilityLearningInterval iterations
-            uint iterationsSinceUpdate = (iterIdx + 1) % ProbabilityLearningInterval;
+            int iterationsSinceUpdate = ((int) iterIdx + 1) % ProbabilityLearningInterval;
             if(iterationsSinceUpdate == 0) {
                 probabilityTree.LearnProbabilities();
             }
@@ -220,7 +210,7 @@ namespace GuidedPathTracerExperiments.Integrators {
 
             int curIteration = scene.FrameBuffer.CurIteration - 1;
             if (IncludeDebugVisualizations && state.Depth == 1) {
-                uint iterationsSinceUpdate = (uint) curIteration % ProbabilityLearningInterval;
+                int iterationsSinceUpdate = curIteration % ProbabilityLearningInterval;
                 // Update mixture ratio every ProbabilityLearningInterval iterations
                 if(iterationsSinceUpdate == 0 && curIteration != 0) {
                     float p = probabilityTree.GetProbability(hit.Position);

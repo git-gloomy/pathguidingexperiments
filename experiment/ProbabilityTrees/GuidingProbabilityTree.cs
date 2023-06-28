@@ -1,11 +1,10 @@
-using System.Diagnostics;
 using System.Numerics;
 using SimpleImageIO;
 
 namespace GuidedPathTracerExperiments.ProbabilityTrees;
 
 public abstract class GuidingProbabilityTree {
-    protected uint splitMargin { get; set; }
+    protected int splitMargin { get; set; }
     protected GuidingProbabilityTree[] childNodes = new GuidingProbabilityTree[8];
     protected Vector3 splitCoordinates, lowerBounds, upperBounds;
     protected bool isLeaf = true;
@@ -13,7 +12,7 @@ public abstract class GuidingProbabilityTree {
 
     public RgbColor avgColor = new RgbColor(0.0f, 0.0f, 0.0f);
 
-    public GuidingProbabilityTree(float probability, Vector3 lowerBounds, Vector3 upperBounds, uint splitMargin) {
+    public GuidingProbabilityTree(float probability, Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) {
         this.guidingProbability = probability;
         this.lowerBounds = lowerBounds;
         this.upperBounds = upperBounds;

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Numerics;
 using System.Threading.Tasks;
 using SimpleImageIO;
@@ -17,7 +16,7 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
     
     ConcurrentBag<RootAdaptiveSampleData> sampleData = new ConcurrentBag<RootAdaptiveSampleData>();
 
-    public RootAdaptiveProbabilityTree(float probability, Vector3 lowerBounds, Vector3 upperBounds, uint splitMargin) 
+    public RootAdaptiveProbabilityTree(float probability, Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) 
         : base(probability, lowerBounds, upperBounds, splitMargin) {
         // Nothing to do here
     }
@@ -58,9 +57,9 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
 
     public override void LearnProbabilities() {
         if (!isLeaf) {
-            for (int idx = 0; idx < 8; idx++) {
+            Parallel.For(0, 8, idx => {
                 ((RootAdaptiveProbabilityTree) childNodes[idx]).LearnProbabilities();
-            }
+            });
         } else if (sampleData.Count > splitMargin) {
             for (int idx = 0; idx < 8; idx++) {
                 // Calculate bounding box for each child node
