@@ -25,6 +25,8 @@ public abstract class GuidingProbabilityTree {
 
     public abstract float GetProbability(Vector3 point);
 
+    public abstract void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate);
+
     protected int getChildIdx(Vector3 point) {
         int idx = 0;
         if(point.X > splitCoordinates.X) idx += 4;

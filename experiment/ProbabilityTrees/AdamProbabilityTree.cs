@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Concurrent;
 using System.Numerics;
-using System.Threading.Tasks;
 using SimpleImageIO;
 
 namespace GuidedPathTracerExperiments.ProbabilityTrees;
@@ -30,17 +27,17 @@ public class AdamProbabilityTree : GuidingProbabilityTree {
         else return childNodes[getChildIdx(point)].GetProbability(point);
     }
 
-    public void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimateCosine) {
+    public override void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate) {
         if (!isLeaf) {
             ((AdamProbabilityTree) childNodes[getChildIdx(position)])
-                .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimateCosine);
+                .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);
             return;
         }
         sampleCount++;
 
         lock (this)
         {
-            this.avgColor = this.avgColor * (1.0f - (1.0f / sampleCount)) + radianceEstimateCosine * (1.0f / sampleCount);
+            this.avgColor = this.avgColor * (1.0f - (1.0f / sampleCount)) + radianceEstimate * (1.0f / sampleCount);
             if (sampleCount > splitMargin) {
                 Vector3 lower, upper;
                 for (int idx = 0; idx < 8; idx++) {
@@ -54,11 +51,11 @@ public class AdamProbabilityTree : GuidingProbabilityTree {
 
                 this.isLeaf = false;
                 ((AdamProbabilityTree) childNodes[getChildIdx(position)])
-                    .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimateCosine);                
+                    .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);                
             } else {
                 float alpha = 1.0f / (1.0f + float.Exp(-theta));
                 float combinedPdf = alpha * guidePdf + (1.0f - alpha) * bsdfPdf;
-                float gradient = - radianceEstimateCosine.Average * (guidePdf - bsdfPdf) / (samplePdf * combinedPdf);
+                float gradient = - radianceEstimate.Average * (guidePdf - bsdfPdf) / (samplePdf * combinedPdf);
                 gradient *= alpha * (1.0f - alpha);
                 gradient += regularization * theta;
                 

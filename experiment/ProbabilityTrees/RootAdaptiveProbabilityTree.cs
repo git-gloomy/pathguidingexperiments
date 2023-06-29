@@ -22,7 +22,8 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
         this.guidingProbability = probability;
     }
 
-    public void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, RgbColor radianceEstimate) {
+    public override void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate) {
+        _ = samplePdf;
         if (this.isLeaf) {
             float estimate = radianceEstimate.Average;
             float estimateSquared = estimate * estimate;
@@ -43,7 +44,7 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
             });
         } else {
             ((RootAdaptiveProbabilityTree) childNodes[getChildIdx(position)])
-                .AddSampleData(position, guidePdf, bsdfPdf, radianceEstimate);
+                .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);
         }
     }
 

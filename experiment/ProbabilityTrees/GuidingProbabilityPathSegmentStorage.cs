@@ -4,21 +4,21 @@ using SimpleImageIO;
 
 namespace GuidedPathTracerExperiments.ProbabilityTrees {
 
-    public class RootAdaptivePathSegment {
+    public class GuidingProbabilityPathSegment {
         public bool UseForLearning;
         public Vector3 Position; 
-        public float BsdfPdf, GuidePdf, MisWeight;
-        public RgbColor ScatteredContribution, ScatteringWeight, DirectContribution;
+        public float BsdfPdf, GuidePdf, MisWeight, SamplePdf;
+        public RgbColor ScatteredContribution, ScatteringWeight, DirectContribution, BsdfCosine;
     }
 
-    public class RootAdaptivePathSegmentStorage {
+    public class GuidingProbabilityPathSegmentStorage {
 
         
-        List<RootAdaptivePathSegment> segments = new List<RootAdaptivePathSegment>();
-        public RootAdaptivePathSegment LastSegment { get; set; }
+        List<GuidingProbabilityPathSegment> segments = new List<GuidingProbabilityPathSegment>();
+        public GuidingProbabilityPathSegment LastSegment { get; set; }
 
-        public RootAdaptivePathSegment NextSegment() {
-            var segment = new RootAdaptivePathSegment();
+        public GuidingProbabilityPathSegment NextSegment() {
+            var segment = new GuidingProbabilityPathSegment();
             segments.Add(segment);
             LastSegment = segment;
             return segment;
@@ -29,7 +29,7 @@ namespace GuidedPathTracerExperiments.ProbabilityTrees {
             segments.Clear();
         }
 
-        public void EvaluatePath(RootAdaptiveProbabilityTree tree) {
+        public void EvaluatePath(GuidingProbabilityTree tree) {
             for (int i = segments.Count - 2; i >= 0; i--) {
                 var segment = segments[i];
 
@@ -53,7 +53,8 @@ namespace GuidedPathTracerExperiments.ProbabilityTrees {
                             segment.Position, 
                             segment.GuidePdf,
                             segment.BsdfPdf, 
-                            contrib
+                            segment.SamplePdf,
+                            contrib * segment.BsdfCosine
                         );
                     }
                 }
