@@ -1,0 +1,16 @@
+# generated build files
+obj
+bin
+/runtimes/*
+/prebuilt/*
+/Scenes/*
+
+# IDE generated / user-specific
+*.csproj.user
+/.vs
+/.vscode
+launchSettings.json
+/.idea/*
+
+# rendering results
+/*/Results/*

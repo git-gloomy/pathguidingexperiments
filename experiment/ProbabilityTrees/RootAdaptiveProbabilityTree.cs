@@ -11,19 +11,20 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
         public Vector3 Position { get; set; }
         public float FirstDeriv { get; set; }
         public float SecondDeriv { get; set; }
-        public RgbColor outgoing { get; set; }
+        public RgbColor RadianceEstimate { get; set; }
     }
     
+    float guidingProbability;
     ConcurrentBag<RootAdaptiveSampleData> sampleData = new ConcurrentBag<RootAdaptiveSampleData>();
 
     public RootAdaptiveProbabilityTree(float probability, Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) 
-        : base(probability, lowerBounds, upperBounds, splitMargin) {
-        // Nothing to do here
+        : base(lowerBounds, upperBounds, splitMargin) {
+        this.guidingProbability = probability;
     }
 
-    public void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, RgbColor outgoing) {
+    public void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, RgbColor radianceEstimate) {
         if (this.isLeaf) {
-            float estimate = outgoing.Average;
+            float estimate = radianceEstimate.Average;
             float estimateSquared = estimate * estimate;
             float bsdfPdfMinusGuidePdf = bsdfPdf - guidePdf;
             float divisor = guidingProbability * guidePdf + (1.0f - guidingProbability) * bsdfPdf;
@@ -38,12 +39,17 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
                 Position = position,
                 FirstDeriv = firstDeriv,
                 SecondDeriv = secondDeriv,
-                outgoing = outgoing
+                RadianceEstimate = radianceEstimate
             });
         } else {
             ((RootAdaptiveProbabilityTree) childNodes[getChildIdx(position)])
-                .AddSampleData(position, guidePdf, bsdfPdf, outgoing);
+                .AddSampleData(position, guidePdf, bsdfPdf, radianceEstimate);
         }
+    }
+
+    public override float GetProbability(Vector3 point) {
+        if(isLeaf) return guidingProbability;
+        else return childNodes[getChildIdx(point)].GetProbability(point);
     }
 
     void AddSampleData(RootAdaptiveSampleData sample) {
@@ -55,7 +61,7 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
         }
     }
 
-    public override void LearnProbabilities() {
+    public void LearnProbabilities() {
         if (!isLeaf) {
             Parallel.For(0, 8, idx => {
                 ((RootAdaptiveProbabilityTree) childNodes[idx]).LearnProbabilities();
@@ -106,7 +112,7 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
             foreach (var sample in sampleData) {
                 firstDeriv += sample.FirstDeriv;
                 secondDeriv += sample.SecondDeriv;
-                avgColor += sample.outgoing;
+                avgColor += sample.RadianceEstimate;
             }            
             
             firstDeriv *= div;

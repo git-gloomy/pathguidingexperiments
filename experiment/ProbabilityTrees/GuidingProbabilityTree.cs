@@ -8,22 +8,17 @@ public abstract class GuidingProbabilityTree {
     protected GuidingProbabilityTree[] childNodes = new GuidingProbabilityTree[8];
     protected Vector3 splitCoordinates, lowerBounds, upperBounds;
     protected bool isLeaf = true;
-    protected float guidingProbability;
 
     public RgbColor avgColor = new RgbColor(0.0f, 0.0f, 0.0f);
 
-    public GuidingProbabilityTree(float probability, Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) {
-        this.guidingProbability = probability;
+    public GuidingProbabilityTree(Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) {
         this.lowerBounds = lowerBounds;
         this.upperBounds = upperBounds;
         this.splitCoordinates = lowerBounds + 0.5f * (upperBounds - lowerBounds);
         this.splitMargin = splitMargin;
     }
 
-    public float GetProbability(Vector3 point) {
-        if(isLeaf) return guidingProbability;
-        else return childNodes[getChildIdx(point)].GetProbability(point);
-    }
+    public abstract float GetProbability(Vector3 point);
 
     public RgbColor GetAvgColor(Vector3 point) {
         if(isLeaf) return avgColor;
@@ -38,6 +33,4 @@ public abstract class GuidingProbabilityTree {
 
         return idx;
     }
-
-    public abstract void LearnProbabilities();
 }
