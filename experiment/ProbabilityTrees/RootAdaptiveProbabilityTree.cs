@@ -67,23 +67,9 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
                 ((RootAdaptiveProbabilityTree) childNodes[idx]).LearnProbabilities();
             });
         } else if (sampleData.Count > splitMargin) {
+            Vector3 lower, upper;
             for (int idx = 0; idx < 8; idx++) {
-                // Calculate bounding box for each child node
-                Vector3 lower = new Vector3(
-                    idx < 4 ? this.lowerBounds.X : splitCoordinates.X,
-                    idx % 4 < 2 ? this.lowerBounds.Y : splitCoordinates.Y,
-                    idx % 2 < 1 ? this.lowerBounds.Z : splitCoordinates.Z
-                );
-                
-                Vector3 upper = new Vector3(
-                    idx < 4 ? splitCoordinates.X : this.upperBounds.X,
-                    idx % 4 < 2 ? splitCoordinates.Y : this.upperBounds.Y,
-                    idx % 2 < 1 ? splitCoordinates.Z : this.upperBounds.Z
-                );
-
-                Vector3 diagonal = (upper - lower) * 0.01f;
-                lower -= diagonal;
-                upper += diagonal;
+                (lower, upper) = GetChildBoundingBox(idx);    
                 childNodes[idx] = new RootAdaptiveProbabilityTree(
                     guidingProbability, 
                     lower, upper, 

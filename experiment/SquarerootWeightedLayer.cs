@@ -12,7 +12,7 @@ class SquarerootWeightedLayer : RgbLayer {
         Image = new RgbImage(width, height);
         intervalImage = new RgbImage(width, height);
     }
-
+    
     public SquarerootWeightedLayer(int learningInterval) {
         this.learningInterval = learningInterval;
     }

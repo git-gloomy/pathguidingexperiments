@@ -18,14 +18,16 @@ HTML(FlipBook.Header).Display() |> ignore
 
 #!fsharp
 
+let sceneName = "RoughGlassesIndirect"
 let renderTime method =
-    let json = System.IO.File.ReadAllText($"Results/Pool/{method}/Render.json")
+    let json = System.IO.File.ReadAllText("Results/" + sceneName + $"/{method}/Render.json")
     let doc = System.Text.Json.JsonDocument.Parse(json)
     doc.RootElement.GetProperty("RenderTime").GetDouble()
 Map [
     ("Path tracing", 0.001 * renderTime "PathTracer")
     ("Guided path tracing", 0.001 * renderTime "GuidedPathTracer")
     ("Root adaptive path tracing", 0.001 * renderTime "RootAdaptivePathTracer")
+    ("Adam guided path tracing", 0.001 * renderTime "AdamGuidedPathTracer")
 ]
 
 #!markdown
@@ -35,9 +37,10 @@ Map [
 #!fsharp
 
 FlipBook.New
-    .Add("Path tracing", new RgbImage("Results/Pool/PathTracer/Render.exr"))
-    .Add("Guided path tracing", new RgbImage("Results/Pool/GuidedPathTracer/Render.exr"))
-    .Add("Root adaptive path tracing", new RgbImage("Results/Pool/RootAdaptivePathTracer/Render.exr"))
+    .Add("Path tracing", new RgbImage("Results/" + sceneName + "/PathTracer/Render.exr"))
+    .Add("Guided path tracing", new RgbImage("Results/" + sceneName + "/GuidedPathTracer/Render.exr"))
+    .Add("Root adaptive path tracing", new RgbImage("Results/" + sceneName + "/RootAdaptivePathTracer/Render.exr"))
+    .Add("Adam guided path tracing", new RgbImage("Results/" + sceneName + "/AdamGuidedPathTracer/Render.exr"))
 |> HTML
 
 #!markdown
@@ -46,9 +49,11 @@ FlipBook.New
 
 #!fsharp
 
+let reference = new RgbImage("Results/" + sceneName + "/Reference.exr")
 FlipBook.New
     .WithToneMapper(FlipBook.InitialTMO.FalseColor(0.0f, 0.1f, false))
-    .Add("Path tracing", Metrics.RelMSEImage(new RgbImage("Results/Pool/PathTracer/Render.exr"), new RgbImage("Results/Pool/Reference.exr")))
-    .Add("Guided path tracing", Metrics.RelMSEImage(new RgbImage("Results/Pool/GuidedPathTracer/Render.exr"), new RgbImage("Results/Pool/Reference.exr")))
-    .Add("Root adaptive path tracing", Metrics.RelMSEImage(new RgbImage("Results/Pool/RootAdaptivePathTracer/Render.exr"), new RgbImage("Results/Pool/Reference.exr")))
+    .Add("Path tracing", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/PathTracer/Render.exr"), reference))
+    .Add("Guided path tracing", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/GuidedPathTracer/Render.exr"), reference))
+    .Add("Root adaptive path tracing", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/RootAdaptivePathTracer/Render.exr"), reference))
+    .Add("Adam guided path tracing", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/AdamGuidedPathTracer/Render.exr"), reference))
 |> HTML

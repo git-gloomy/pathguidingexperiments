@@ -26,36 +26,26 @@ public class AdamProbabilityTree : GuidingProbabilityTree {
 
     public override float GetProbability(Vector3 point)
     {
-        return 1.0f / (1.0f + float.Exp(-theta));
+        if(isLeaf) return 1.0f / (1.0f + float.Exp(-theta));
+        else return childNodes[getChildIdx(point)].GetProbability(point);
     }
 
-    public void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate) {
-        if (!this.isLeaf) {
-            ((AdamProbabilityTree) childNodes[getChildIdx(position)]).AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);
+    public void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimateCosine) {
+        if (!isLeaf) {
+            ((AdamProbabilityTree) childNodes[getChildIdx(position)])
+                .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimateCosine);
             return;
         }
         sampleCount++;
 
         lock (this)
         {
-            if (this.sampleCount > splitMargin) {
+            this.avgColor = this.avgColor * (1.0f - (1.0f / sampleCount)) + radianceEstimateCosine * (1.0f / sampleCount);
+            if (sampleCount > splitMargin) {
+                Vector3 lower, upper;
                 for (int idx = 0; idx < 8; idx++) {
-                    // Calculate bounding box for each child node
-                    Vector3 lower = new Vector3(
-                        idx < 4 ? this.lowerBounds.X : splitCoordinates.X,
-                        idx % 4 < 2 ? this.lowerBounds.Y : splitCoordinates.Y,
-                        idx % 2 < 1 ? this.lowerBounds.Z : splitCoordinates.Z
-                    );
+                    (lower, upper) = GetChildBoundingBox(idx);    
 
-                    Vector3 upper = new Vector3(
-                        idx < 4 ? splitCoordinates.X : this.upperBounds.X,
-                        idx % 4 < 2 ? splitCoordinates.Y : this.upperBounds.Y,
-                        idx % 2 < 1 ? splitCoordinates.Z : this.upperBounds.Z
-                    );
-
-                    Vector3 diagonal = (upper - lower) * 0.01f;
-                    lower -= diagonal;
-                    upper += diagonal;
                     childNodes[idx] = new AdamProbabilityTree(
                         lower, upper, 
                         splitMargin,
@@ -63,11 +53,12 @@ public class AdamProbabilityTree : GuidingProbabilityTree {
                 } 
 
                 this.isLeaf = false;
-                ((AdamProbabilityTree) childNodes[getChildIdx(position)]).AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);                
+                ((AdamProbabilityTree) childNodes[getChildIdx(position)])
+                    .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimateCosine);                
             } else {
                 float alpha = 1.0f / (1.0f + float.Exp(-theta));
                 float combinedPdf = alpha * guidePdf + (1.0f - alpha) * bsdfPdf;
-                float gradient = - radianceEstimate.Average * (guidePdf - bsdfPdf) / (samplePdf * combinedPdf);
+                float gradient = - radianceEstimateCosine.Average * (guidePdf - bsdfPdf) / (samplePdf * combinedPdf);
                 gradient *= alpha * (1.0f - alpha);
                 gradient += regularization * theta;
                 
