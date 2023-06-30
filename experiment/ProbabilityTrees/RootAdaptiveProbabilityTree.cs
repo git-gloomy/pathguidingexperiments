@@ -15,7 +15,7 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
     }
     
     float guidingProbability;
-    List<RootAdaptiveSampleData> samples = new List<RootAdaptiveSampleData>();
+    List<RootAdaptiveSampleData> samples = new();
 
     public RootAdaptiveProbabilityTree(float probability, Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) 
         : base(lowerBounds, upperBounds, splitMargin) {
@@ -99,7 +99,7 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
             float secondDeriv = 0.0f;
             
             float div = (1.0f / (float) samples.Count);
-            avgColor = new RgbColor(0.0f);
+            avgColor = new(0.0f);
             foreach (var sample in samples) {
                 firstDeriv += sample.FirstDeriv;
                 secondDeriv += sample.SecondDeriv;

@@ -14,16 +14,16 @@ public class Experiment : SeeSharp.Experiments.Experiment {
     }
 
     public override List<Method> MakeMethods() => new() {
-        //new("PathTracer", new PathTracer() {
-        //    TotalSpp = numSamples,
-        //    MaximumRenderTimeMs = maxTime,
-        //    NumShadowRays = 1,
-        //}),
-        //new("GuidedPathTracer", new GuidedPathTracer() {
-        //    TotalSpp = numSamples,
-        //    MaximumRenderTimeMs = maxTime,
-        //    NumShadowRays = 1,
-        //}),
+        new("PathTracer", new PathTracer() {
+            TotalSpp = numSamples,
+            MaximumRenderTimeMs = maxTime,
+            NumShadowRays = 1,
+        }),
+        new("GuidedPathTracer", new GuidedPathTracer() {
+            TotalSpp = numSamples,
+            MaximumRenderTimeMs = maxTime,
+            NumShadowRays = 1,
+        }),
         new("RootAdaptiveGuidedPathTracer", new RootAdaptiveGuidedPathTracer() {
             TotalSpp = numSamples,
             MaximumRenderTimeMs = maxTime,
@@ -32,6 +32,7 @@ public class Experiment : SeeSharp.Experiments.Experiment {
             ProbabilityLearningInterval = 32,
             InitialGuidingProbability = 0.5f,
             ProbabilityTreeSplitMargin = 1000,
+            SingleIterationLearning = false,
         }),
         new("KullbackLeiblerGuidedPathTracer", new KullbackLeiblerGuidedPathTracer() {
             TotalSpp = numSamples,
@@ -48,6 +49,27 @@ public class Experiment : SeeSharp.Experiments.Experiment {
             ProbabilityLearningInterval = 32,
             InitialGuidingProbability = 0.5f,
             ProbabilityTreeSplitMargin = 1000,
+            SingleIterationLearning = false,
+        }),
+        new("SIRootAdaptiveGuidedPathTracer", new RootAdaptiveGuidedPathTracer() {
+            TotalSpp = numSamples,
+            MaximumRenderTimeMs = maxTime,
+            NumShadowRays = 1,
+            IncludeDebugVisualizations = true,
+            ProbabilityLearningInterval = 32,
+            InitialGuidingProbability = 0.5f,
+            ProbabilityTreeSplitMargin = 50,
+            SingleIterationLearning = true,
+        }),
+        new("SISecondMomentGuidedPathTracer", new SecondMomentGuidedPathTracer() {
+            TotalSpp = numSamples,
+            MaximumRenderTimeMs = maxTime,
+            NumShadowRays = 1,
+            IncludeDebugVisualizations = true,
+            ProbabilityLearningInterval = 32,
+            InitialGuidingProbability = 0.5f,
+            ProbabilityTreeSplitMargin = 50,
+            SingleIterationLearning = true,
         }),
     };
 }

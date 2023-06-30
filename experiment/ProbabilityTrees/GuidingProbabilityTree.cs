@@ -9,7 +9,7 @@ public abstract class GuidingProbabilityTree {
     protected Vector3 splitCoordinates, lowerBounds, upperBounds;
     protected bool isLeaf = true;
 
-    public RgbColor avgColor = new RgbColor(0.0f, 0.0f, 0.0f);
+    public RgbColor avgColor = new(0.0f, 0.0f, 0.0f);
 
     public GuidingProbabilityTree(Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) {
         this.lowerBounds = lowerBounds;
@@ -37,13 +37,13 @@ public abstract class GuidingProbabilityTree {
     }
 
     protected (Vector3, Vector3) GetChildBoundingBox(int childIdx) {
-        Vector3 lower = new Vector3(
+        Vector3 lower = new(
             childIdx < 4 ? this.lowerBounds.X : splitCoordinates.X,
             childIdx % 4 < 2 ? this.lowerBounds.Y : splitCoordinates.Y,
             childIdx % 2 < 1 ? this.lowerBounds.Z : splitCoordinates.Z
         );
 
-        Vector3 upper = new Vector3(
+        Vector3 upper = new(
             childIdx < 4 ? splitCoordinates.X : this.upperBounds.X,
             childIdx % 4 < 2 ? splitCoordinates.Y : this.upperBounds.Y,
             childIdx % 2 < 1 ? splitCoordinates.Z : this.upperBounds.Z

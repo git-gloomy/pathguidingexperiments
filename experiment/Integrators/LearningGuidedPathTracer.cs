@@ -57,6 +57,9 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected List<SingleIterationLayer> incidentRadianceVisualizations = new();
         protected List<SingleIterationLayer> guidingProbabilityVisualizations = new();
 
+        // Used by RootAdaptive/SecondMomentGuidedPathTracer if SingleIterationLearning is set to true
+        protected bool enableProbabilityLearning = true;
+
         public override void RegisterSample(Pixel pixel, RgbColor weight, float misWeight, uint depth,
                                             bool isNextEvent) {
             base.RegisterSample(pixel, weight, misWeight, depth, isNextEvent);
@@ -162,7 +165,7 @@ namespace GuidedPathTracerExperiments.Integrators {
                 int iterationsSinceUpdate = curIteration % debugVisualizationInterval;
                 if(iterationsSinceUpdate == 0 && curIteration != 0) {
                     float p = probabilityTree.GetProbability(hit.Position);
-                    RgbColor probabilityColor = new RgbColor(
+                    RgbColor probabilityColor = new(
                         hit ? p : 0, 
                         hit ? 0.5f - float.Abs(p - 0.5f) : 0, 
                         hit ? 1.0f - p : 0
@@ -351,7 +354,8 @@ namespace GuidedPathTracerExperiments.Integrators {
                 rrAffectsDirectContribution: true);
             sampleStorage.AddSamples(pathSegmentStorage.Value.SamplesRawPointer, num);
 
-            probPathSegmentStorage.Value.EvaluatePath(probabilityTree);
+            if (enableProbabilityLearning) probPathSegmentStorage.Value.EvaluatePath(probabilityTree);
+            else probPathSegmentStorage.Value.Clear();
         }
     }
 }

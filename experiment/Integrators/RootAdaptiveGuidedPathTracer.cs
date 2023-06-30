@@ -3,6 +3,7 @@ using SimpleImageIO;
 using TinyEmbree;
 using GuidedPathTracerExperiments.ProbabilityTrees;
 using SeeSharp.Sampling;
+using OpenPGL.NET;
 
 namespace GuidedPathTracerExperiments.Integrators {
 
@@ -20,6 +21,12 @@ namespace GuidedPathTracerExperiments.Integrators {
         /// </summary>
         public float InitialGuidingProbability { get; set; }
 
+        /// <summary>
+        /// If true, discards all samples for learning except the ones in the iteration used for
+        /// learning
+        /// </summary>
+        public bool SingleIterationLearning { get; set; }
+
         SquarerootWeightedLayer sqrtWeightedRender;
 
         protected override void OnPrepareRender() {
@@ -35,6 +42,16 @@ namespace GuidedPathTracerExperiments.Integrators {
             scene.FrameBuffer.AddLayer("sqrtWeightedSamples", sqrtWeightedRender);
 
             base.OnPrepareRender();
+        }
+
+        protected override void OnPreIteration(uint iterIdx)
+        {
+            int iterationsSinceUpdate = ((int) iterIdx + 1) % ProbabilityLearningInterval;
+            if(iterationsSinceUpdate == 0 || !SingleIterationLearning) {
+                enableProbabilityLearning = true;
+            } else {
+                enableProbabilityLearning = false;
+            }
         }
 
         protected override void OnPostIteration(uint iterIdx) {

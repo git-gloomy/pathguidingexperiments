@@ -7,7 +7,7 @@ namespace GuidedPathTracerExperiments.ProbabilityTrees;
 
 public class SecondMomentProbabilityTree : GuidingProbabilityTree {
     
-    float[] strategies = {.1f, .3f, .5f, .7f, .9f};
+    float[] strategies = {.1f, .2f, .3f, .4f, .5f, .6f, .7f, .8f, .9f};
     float guidingProbability;
 
     class SecondMomentSampleData {
@@ -94,7 +94,7 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
             float count = samples.Count;
             float[] secondMoments = new float[strategies.Length];
             float bsdfProbability = 1.0f - guidingProbability;
-            avgColor = new RgbColor(0.0f);
+            avgColor = new(0.0f);
 
             foreach (var sample in samples) {
                 avgColor += sample.RadianceEstimate;

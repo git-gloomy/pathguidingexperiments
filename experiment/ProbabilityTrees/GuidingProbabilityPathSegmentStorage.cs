@@ -12,13 +12,11 @@ namespace GuidedPathTracerExperiments.ProbabilityTrees {
     }
 
     public class GuidingProbabilityPathSegmentStorage {
-
-        
-        List<GuidingProbabilityPathSegment> segments = new List<GuidingProbabilityPathSegment>();
+        List<GuidingProbabilityPathSegment> segments = new();
         public GuidingProbabilityPathSegment LastSegment { get; set; }
 
         public GuidingProbabilityPathSegment NextSegment() {
-            var segment = new GuidingProbabilityPathSegment();
+            GuidingProbabilityPathSegment segment = new();
             segments.Add(segment);
             LastSegment = segment;
             return segment;
@@ -34,8 +32,8 @@ namespace GuidedPathTracerExperiments.ProbabilityTrees {
                 var segment = segments[i];
 
                 if(segment.UseForLearning && segment.GuidePdf != 0 && segment.BsdfPdf != 0) {
-                    RgbColor throughput = new RgbColor(1.0f);
-                    RgbColor contrib = new RgbColor(0.0f);
+                    RgbColor throughput = new(1.0f);
+                    RgbColor contrib = new(0.0f);
 
                     for (int j = i+1; j < segments.Count; j++) {
                         var nextSegment = segments[j];

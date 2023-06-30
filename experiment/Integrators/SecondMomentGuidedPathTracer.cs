@@ -20,6 +20,12 @@ namespace GuidedPathTracerExperiments.Integrators {
         /// </summary>
         public float InitialGuidingProbability { get; set; }
 
+        /// <summary>
+        /// If true, discards all samples for learning except the ones in the iteration used for
+        /// learning
+        /// </summary>
+        public bool SingleIterationLearning { get; set; }
+
         protected override void OnPrepareRender() {
             Vector3 lower = scene.Bounds.Min - scene.Bounds.Diagonal * 0.01f;
             Vector3 upper = scene.Bounds.Max + scene.Bounds.Diagonal * 0.01f;
@@ -30,6 +36,16 @@ namespace GuidedPathTracerExperiments.Integrators {
             );
 
             base.OnPrepareRender();
+        }
+
+        protected override void OnPreIteration(uint iterIdx)
+        {
+            int iterationsSinceUpdate = ((int) iterIdx + 1) % ProbabilityLearningInterval;
+            if(iterationsSinceUpdate == 0 || !SingleIterationLearning) {
+                enableProbabilityLearning = true;
+            } else {
+                enableProbabilityLearning = false;
+            }
         }
 
         protected override void OnPostIteration(uint iterIdx) {
