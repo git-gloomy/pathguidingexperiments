@@ -3,16 +3,16 @@ using SimpleImageIO;
 
 namespace GuidedPathTracerExperiments.ProbabilityTrees;
 
-public class AdamProbabilityTree : GuidingProbabilityTree {
+public class KullbackLeiblerProbabilityTree : GuidingProbabilityTree {
     static float learningRate = 0.01f, regularization = 0.01f, beta1 = 0.9f, beta2 = 0.999f;
     float sampleCount = 0, t = 0, m = 0, v = 0, theta = 0;
 
-    public AdamProbabilityTree(Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) 
+    public KullbackLeiblerProbabilityTree(Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) 
         : base(lowerBounds, upperBounds, splitMargin) {
         // Nothing to do here
     }
 
-    AdamProbabilityTree(Vector3 lowerBounds, Vector3 upperBounds, int splitMargin,
+    KullbackLeiblerProbabilityTree(Vector3 lowerBounds, Vector3 upperBounds, int splitMargin,
                         float t, float m, float v, float theta)
                         : base(lowerBounds, upperBounds, splitMargin) {
         this.t = t;
@@ -29,7 +29,7 @@ public class AdamProbabilityTree : GuidingProbabilityTree {
 
     public override void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate) {
         if (!isLeaf) {
-            ((AdamProbabilityTree) childNodes[getChildIdx(position)])
+            ((KullbackLeiblerProbabilityTree) childNodes[getChildIdx(position)])
                 .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);
             return;
         }
@@ -43,14 +43,14 @@ public class AdamProbabilityTree : GuidingProbabilityTree {
                 for (int idx = 0; idx < 8; idx++) {
                     (lower, upper) = GetChildBoundingBox(idx);    
 
-                    childNodes[idx] = new AdamProbabilityTree(
+                    childNodes[idx] = new KullbackLeiblerProbabilityTree(
                         lower, upper, 
                         splitMargin,
                         t, m, v, theta);
                 } 
 
                 this.isLeaf = false;
-                ((AdamProbabilityTree) childNodes[getChildIdx(position)])
+                ((KullbackLeiblerProbabilityTree) childNodes[getChildIdx(position)])
                     .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);                
             } else {
                 float alpha = 1.0f / (1.0f + float.Exp(-theta));

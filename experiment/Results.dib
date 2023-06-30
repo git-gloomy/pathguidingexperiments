@@ -8,17 +8,9 @@
 open SimpleImageIO
 HTML(FlipBook.Header).Display() |> ignore
 
-#!markdown
-
-# Equal sample comparison: path guiding vs vanilla VCM
-
-#!markdown
-
-### Render times in seconds for 128spp
-
 #!fsharp
 
-let sceneName = "RoughGlassesIndirect"
+let sceneName = "CornellBox"
 let renderTime method =
     let json = System.IO.File.ReadAllText("Results/" + sceneName + $"/{method}/Render.json")
     let doc = System.Text.Json.JsonDocument.Parse(json)
@@ -26,8 +18,9 @@ let renderTime method =
 Map [
     ("Path tracing", 0.001 * renderTime "PathTracer")
     ("Guided path tracing", 0.001 * renderTime "GuidedPathTracer")
-    ("Root adaptive path tracing", 0.001 * renderTime "RootAdaptivePathTracer")
-    ("Adam guided path tracing", 0.001 * renderTime "AdamGuidedPathTracer")
+    ("Guided path tracing (root adaptive)", 0.001 * renderTime "RootAdaptiveGuidedPathTracer")
+    ("Guided path tracing (Kullback-Leibler)", 0.001 * renderTime "KullbackLeiblerGuidedPathTracer")
+    ("Guided path tracing (second moment)", 0.001 * renderTime "SecondMomentGuidedPathTracer")
 ]
 
 #!markdown
@@ -39,8 +32,9 @@ Map [
 FlipBook.New
     .Add("Path tracing", new RgbImage("Results/" + sceneName + "/PathTracer/Render.exr"))
     .Add("Guided path tracing", new RgbImage("Results/" + sceneName + "/GuidedPathTracer/Render.exr"))
-    .Add("Root adaptive path tracing", new RgbImage("Results/" + sceneName + "/RootAdaptivePathTracer/Render.exr"))
-    .Add("Adam guided path tracing", new RgbImage("Results/" + sceneName + "/AdamGuidedPathTracer/Render.exr"))
+    .Add("Guided path tracing (root adaptive)", new RgbImage("Results/" + sceneName + "/RootAdaptiveGuidedPathTracer/Render.exr"))
+    .Add("Guided path tracing (Kullback-Leibler)", new RgbImage("Results/" + sceneName + "/KullbackLeiblerGuidedPathTracer/Render.exr"))
+    .Add("Guided path tracing (second moment)", new RgbImage("Results/" + sceneName + "/SecondMomentGuidedPathTracer/Render.exr"))
 |> HTML
 
 #!markdown
@@ -54,6 +48,7 @@ FlipBook.New
     .WithToneMapper(FlipBook.InitialTMO.FalseColor(0.0f, 0.1f, false))
     .Add("Path tracing", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/PathTracer/Render.exr"), reference))
     .Add("Guided path tracing", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/GuidedPathTracer/Render.exr"), reference))
-    .Add("Root adaptive path tracing", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/RootAdaptivePathTracer/Render.exr"), reference))
-    .Add("Adam guided path tracing", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/AdamGuidedPathTracer/Render.exr"), reference))
+    .Add("Guided path tracing (root adaptive)", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/RootAdaptiveGuidedPathTracer/Render.exr"), reference))
+    .Add("Guided path tracing (Kullback-Leibler)", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/KullbackLeiblerGuidedPathTracer/Render.exr"), reference))
+    .Add("Guided path tracing (second moment)", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/SecondMomentGuidedPathTracer/Render.exr"), reference))
 |> HTML
