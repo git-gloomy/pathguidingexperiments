@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using SimpleImageIO;
@@ -18,7 +18,7 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
         public RgbColor RadianceEstimate { get; set; }
     }
 
-    ConcurrentBag<SecondMomentSampleData> samples = new ConcurrentBag<SecondMomentSampleData>();
+    List<SecondMomentSampleData> samples = new List<SecondMomentSampleData>();
 
     public SecondMomentProbabilityTree(float probability, Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) 
         : base(lowerBounds, upperBounds, splitMargin) {
@@ -27,7 +27,9 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
 
     void AddSampleData(SecondMomentSampleData sample) {
         if (this.isLeaf) {
-            samples.Add(sample);
+            lock(samples) {
+                samples.Add(sample);
+            }
         } else {
             ((SecondMomentProbabilityTree) childNodes[getChildIdx(sample.Position)])
                 .AddSampleData(sample);
@@ -36,13 +38,15 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
 
     public override void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate) {
         if (this.isLeaf) {
-            samples.Add(new SecondMomentSampleData() {
-                Position = position,
-                GuidePdf = guidePdf,
-                BsdfPdf = bsdfPdf,
-                SamplePdf = samplePdf,
-                RadianceEstimate = radianceEstimate,
-            });
+            lock(samples) {
+                samples.Add(new SecondMomentSampleData() {
+                    Position = position,
+                    GuidePdf = guidePdf,
+                    BsdfPdf = bsdfPdf,
+                    SamplePdf = samplePdf,
+                    RadianceEstimate = radianceEstimate,
+                });
+            }
         } else {
             ((SecondMomentProbabilityTree) childNodes[getChildIdx(position)])
                 .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);
@@ -89,6 +93,7 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
         } else {
             float count = samples.Count;
             float[] secondMoments = new float[strategies.Length];
+            float bsdfProbability = 1.0f - guidingProbability;
             avgColor = new RgbColor(0.0f);
 
             foreach (var sample in samples) {
@@ -96,22 +101,20 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
 
                 float estimate = sample.RadianceEstimate.Average;
 
-                float combinedPdfs = (sample.GuidePdf * guidingProbability + sample.BsdfPdf * (1.0f - guidingProbability));
-                float combinedPdfsProxy = (sample.GuidePdf * 0.5f + sample.BsdfPdf * 0.5f);
+                float combinedPdfs = (sample.GuidePdf * 0.5f + sample.BsdfPdf * 0.5f);
+                float weightProxyBsdf = 0.5f * sample.BsdfPdf / combinedPdfs;
+                float weightProxyGuide = 0.5f * sample.GuidePdf / combinedPdfs;
 
-                float weightProxyBsdf = 0.5f * sample.BsdfPdf / combinedPdfsProxy;
-                float weightProxyGuide = 0.5f * sample.GuidePdf / combinedPdfsProxy;
+                float correctionNum = bsdfProbability * weightProxyBsdf + guidingProbability * weightProxyGuide;
 
-                float numeratorCorrection = (1.0f - guidingProbability) * weightProxyBsdf + guidingProbability * weightProxyGuide;
-
-                float balanceBsdf = (1.0f - guidingProbability) * sample.BsdfPdf / combinedPdfs;
-                float balanceGuide = guidingProbability * sample.GuidePdf / combinedPdfs;
+                float balanceBsdf = bsdfProbability * sample.BsdfPdf / sample.SamplePdf;
+                float balanceGuide = guidingProbability * sample.GuidePdf / sample.SamplePdf;
 
                 float estimateBsdf = balanceBsdf * estimate / (count * sample.BsdfPdf);
                 float estimateGuide = balanceGuide * estimate / (count * sample.GuidePdf);
 
                 for (int i = 0; i < strategies.Length; i++) {
-                    float correction = numeratorCorrection / ((1.0f - strategies[i]) * weightProxyBsdf + strategies[i] * weightProxyGuide);
+                    float correction = correctionNum / ((1.0f - strategies[i]) * weightProxyBsdf + strategies[i] * weightProxyGuide);
                     secondMoments[i] += estimateBsdf * estimateBsdf * correction;
                     secondMoments[i] += estimateGuide * estimateGuide * correction;
                 }

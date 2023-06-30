@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using SimpleImageIO;
@@ -15,7 +15,7 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
     }
     
     float guidingProbability;
-    ConcurrentBag<RootAdaptiveSampleData> samples = new ConcurrentBag<RootAdaptiveSampleData>();
+    List<RootAdaptiveSampleData> samples = new List<RootAdaptiveSampleData>();
 
     public RootAdaptiveProbabilityTree(float probability, Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) 
         : base(lowerBounds, upperBounds, splitMargin) {
@@ -24,7 +24,9 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
 
     void AddSampleData(RootAdaptiveSampleData sample) {
         if (this.isLeaf) {
-            samples.Add(sample);
+            lock(samples) {
+                samples.Add(sample);
+            }
         } else {
             ((RootAdaptiveProbabilityTree) childNodes[getChildIdx(sample.Position)])
                 .AddSampleData(sample);
@@ -36,21 +38,22 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
         if (this.isLeaf) {
             float estimate = radianceEstimate.Average;
             float estimateSquared = estimate * estimate;
-            float bsdfPdfMinusGuidePdf = bsdfPdf - guidePdf;
-            float divisor = guidingProbability * guidePdf + (1.0f - guidingProbability) * bsdfPdf;
+            float diff = bsdfPdf - guidePdf;
 
-            float firstDeriv = estimateSquared * bsdfPdfMinusGuidePdf;
-            firstDeriv /= MathF.Pow(divisor, 3.0f);
+            float firstDeriv = estimateSquared * diff;
+            firstDeriv /= MathF.Pow(samplePdf, 3.0f);
             
-            float secondDeriv = estimateSquared * MathF.Pow(bsdfPdfMinusGuidePdf, 2.0f);
-            secondDeriv /= MathF.Pow(divisor, 4.0f);
+            float secondDeriv = estimateSquared * MathF.Pow(diff, 2.0f);
+            secondDeriv /= MathF.Pow(samplePdf, 4.0f);
             
-            samples.Add(new RootAdaptiveSampleData() {
-                Position = position,
-                FirstDeriv = firstDeriv,
-                SecondDeriv = secondDeriv,
-                RadianceEstimate = radianceEstimate
-            });
+            lock(samples) {
+                samples.Add(new RootAdaptiveSampleData() {
+                    Position = position,
+                    FirstDeriv = firstDeriv,
+                    SecondDeriv = secondDeriv,
+                    RadianceEstimate = radianceEstimate
+                });
+            }
         } else {
             ((RootAdaptiveProbabilityTree) childNodes[getChildIdx(position)])
                 .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);
