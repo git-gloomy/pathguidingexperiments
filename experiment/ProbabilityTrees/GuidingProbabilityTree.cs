@@ -28,12 +28,23 @@ public abstract class GuidingProbabilityTree {
     public abstract void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate);
 
     protected int getChildIdx(Vector3 point) {
-        int idx = 0;
-        if(point.X > splitCoordinates.X) idx += 4;
-        if(point.Y > splitCoordinates.Y) idx += 2;
-        if(point.Z > splitCoordinates.Z) idx += 1;
-
-        return idx;
+        if (point.X > splitCoordinates.X) {
+            if (point.Y > splitCoordinates.Y) {
+                if (point.Z > splitCoordinates.Z) return 7;
+                else return 6;
+            } else {
+                if (point.Z > splitCoordinates.Z) return 5;
+                else return 4;
+            }
+        } else {
+            if (point.Y > splitCoordinates.Y) {
+                if (point.Z > splitCoordinates.Z) return 3;
+                else return 2;
+            } else {
+                if (point.Z > splitCoordinates.Z) return 1;
+                else return 0;
+            }
+        }
     }
 
     protected (Vector3, Vector3) GetChildBoundingBox(int childIdx) {

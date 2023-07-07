@@ -54,7 +54,7 @@ namespace GuidedPathTracerExperiments.Integrators {
 
             // Update mixture ratio every ProbabilityLearningInterval iterations
             int iterationsSinceUpdate = ((int) iterIdx + 1) % ProbabilityLearningInterval;
-            if(iterationsSinceUpdate == 0) {
+            if(iterationsSinceUpdate == 0 && iterIdx + 1 != TotalSpp) {
                 ((SecondMomentProbabilityTree) probabilityTree).LearnProbabilities();
             }
 

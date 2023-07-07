@@ -37,20 +37,13 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
     }
 
     public override void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate) {
-        if (this.isLeaf) {
-            lock(samples) {
-                samples.Add(new SecondMomentSampleData() {
+        AddSampleData(new SecondMomentSampleData() {
                     Position = position,
                     GuidePdf = guidePdf,
                     BsdfPdf = bsdfPdf,
                     SamplePdf = samplePdf,
                     RadianceEstimate = radianceEstimate,
                 });
-            }
-        } else {
-            ((SecondMomentProbabilityTree) childNodes[getChildIdx(position)])
-                .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);
-        }
     }
 
     public override float GetProbability(Vector3 point) {
@@ -84,12 +77,9 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
             isLeaf = false;
 
             // Calculate probabilities for each child node
-            foreach (var child in childNodes) {
-                ((SecondMomentProbabilityTree) child).LearnProbabilities();
-            }
-            //Parallel.For(0, 8, idx => {
-            //    ((SecondMomentProbabilityTree) childNodes[idx]).LearnProbabilities();
-            //});
+            Parallel.For(0, 8, idx => {
+                ((SecondMomentProbabilityTree) childNodes[idx]).LearnProbabilities();
+            });
         } else {
             float count = samples.Count;
             float[] secondMoments = new float[strategies.Length];
@@ -100,6 +90,7 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
                 avgColor += sample.RadianceEstimate;
 
                 float estimate = sample.RadianceEstimate.Average;
+                if (estimate == 0.0f) continue;
 
                 float combinedPdfs = (sample.GuidePdf * 0.5f + sample.BsdfPdf * 0.5f);
                 float weightProxyBsdf = 0.5f * sample.BsdfPdf / combinedPdfs;

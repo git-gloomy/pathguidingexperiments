@@ -129,7 +129,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             pathSegmentStorage.Value.Reserve((uint)MaxDepth + 1);
             pathSegmentStorage.Value.Clear();
 
-            probPathSegmentStorage.Value.Clear();
+            probPathSegmentStorage.Value.Reserve((uint)MaxDepth + 1);
         }
 
         protected override void OnHit(in Ray ray, in Hit hit, PathState state) {
@@ -228,7 +228,6 @@ namespace GuidedPathTracerExperiments.Integrators {
                 contrib /= guidePdf + bsdfPdf;
                 
                 nextRay = Raytracer.SpawnRay(hit, sampledDir);
-                probSegment.UseForLearning = true;
             } else { // Sample the BSDF (default)
                 (nextRay, bsdfPdf, contrib) = base.SampleDirection(ray, hit, state);
                 probSegment.BsdfPdf = bsdfPdf;
@@ -247,8 +246,6 @@ namespace GuidedPathTracerExperiments.Integrators {
 
                     // Apply balance heuristic
                     contrib *= bsdfPdf / (1 - selectGuideProb) / (guidePdf + bsdfPdf);
-                    
-                    probSegment.UseForLearning = true;
                 }
             }            
 
@@ -256,7 +253,6 @@ namespace GuidedPathTracerExperiments.Integrators {
 
             float pdf = guidePdf + bsdfPdf;
             if (pdf == 0) { // prevent NaNs / Infs
-                probSegment.UseForLearning = false;
                 return (new(), 0, RgbColor.Black);
             }
 

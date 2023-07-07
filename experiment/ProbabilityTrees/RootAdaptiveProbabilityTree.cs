@@ -35,29 +35,32 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
 
     public override void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate) {
         _ = samplePdf;
-        if (this.isLeaf) {
-            float estimate = radianceEstimate.Average;
-            float estimateSquared = estimate * estimate;
-            float diff = bsdfPdf - guidePdf;
-
-            float firstDeriv = estimateSquared * diff;
-            firstDeriv /= MathF.Pow(samplePdf, 3.0f);
-            
-            float secondDeriv = estimateSquared * MathF.Pow(diff, 2.0f);
-            secondDeriv /= MathF.Pow(samplePdf, 4.0f);
-            
-            lock(samples) {
-                samples.Add(new RootAdaptiveSampleData() {
-                    Position = position,
-                    FirstDeriv = firstDeriv,
-                    SecondDeriv = secondDeriv,
-                    RadianceEstimate = radianceEstimate
-                });
-            }
-        } else {
-            ((RootAdaptiveProbabilityTree) childNodes[getChildIdx(position)])
-                .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);
+        float estimate = radianceEstimate.Average;
+        if (estimate == 0.0f) {
+            AddSampleData(new RootAdaptiveSampleData() {
+                Position = position,
+                FirstDeriv = 0.0f,
+                SecondDeriv = 0.0f,
+                RadianceEstimate = radianceEstimate
+            });
+            return;
         }
+
+        float estimateSquared = estimate * estimate;
+        float diff = bsdfPdf - guidePdf;
+        
+        float firstDeriv = estimateSquared * diff;
+        firstDeriv /= MathF.Pow(samplePdf, 3.0f);
+        
+        float secondDeriv = estimateSquared * MathF.Pow(diff, 2.0f);
+        secondDeriv /= MathF.Pow(samplePdf, 4.0f);
+        
+        AddSampleData(new RootAdaptiveSampleData() {
+            Position = position,
+            FirstDeriv = firstDeriv,
+            SecondDeriv = secondDeriv,
+            RadianceEstimate = radianceEstimate
+        });
     }
 
     public override float GetProbability(Vector3 point) {
