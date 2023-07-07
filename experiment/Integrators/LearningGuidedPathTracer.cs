@@ -54,7 +54,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected List<SingleIterationLayer> iterationRenderings = new();
         protected List<SingleIterationLayer> iterationCacheVisualizations = new();
 
-        protected List<SingleIterationLayer> incidentRadianceVisualizations = new();
+        //protected List<SingleIterationLayer> incidentRadianceVisualizations = new();
         protected List<SingleIterationLayer> guidingProbabilityVisualizations = new();
 
         // Used by RootAdaptive/SecondMomentGuidedPathTracer if SingleIterationLearning is set to true
@@ -101,9 +101,9 @@ namespace GuidedPathTracerExperiments.Integrators {
             
             if (IncludeDebugVisualizations) {
                 for (int i = debugVisualizationInterval; i < TotalSpp; i += debugVisualizationInterval) {
-                    incidentRadianceVisualizations.Add(new());
+                    //incidentRadianceVisualizations.Add(new());
                     guidingProbabilityVisualizations.Add(new());
-                    scene.FrameBuffer.AddLayer($"learnedRadiance{i:0000}", incidentRadianceVisualizations[^1]);
+                    //scene.FrameBuffer.AddLayer($"learnedRadiance{i:0000}", incidentRadianceVisualizations[^1]);
                     scene.FrameBuffer.AddLayer($"guidingProbability{i:0000}", guidingProbabilityVisualizations[^1]);
                 }
             }
@@ -173,9 +173,9 @@ namespace GuidedPathTracerExperiments.Integrators {
                     guidingProbabilityVisualizations[(int) (curIteration / debugVisualizationInterval) - 1]
                         .Splat(state.Pixel.Col, state.Pixel.Row, probabilityColor);
 
-                    RgbColor incidentRadiance = probabilityTree.GetAvgColor(hit.Position);
-                    incidentRadianceVisualizations[(int) (curIteration / debugVisualizationInterval) - 1]
-                        .Splat(state.Pixel.Col, state.Pixel.Row, incidentRadiance);
+                    //RgbColor incidentRadiance = probabilityTree.GetAvgColor(hit.Position);
+                    //incidentRadianceVisualizations[(int) (curIteration / debugVisualizationInterval) - 1]
+                    //    .Splat(state.Pixel.Col, state.Pixel.Row, incidentRadiance);
                 }                
             }
         }

@@ -9,7 +9,7 @@ public abstract class GuidingProbabilityTree {
     protected Vector3 splitCoordinates, lowerBounds, upperBounds;
     protected bool isLeaf = true;
 
-    public RgbColor avgColor = new(0.0f, 0.0f, 0.0f);
+    //public RgbColor avgColor = new(0.0f, 0.0f, 0.0f);
 
     public GuidingProbabilityTree(Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) {
         this.lowerBounds = lowerBounds;
@@ -18,10 +18,10 @@ public abstract class GuidingProbabilityTree {
         this.splitMargin = splitMargin;
     }
 
-    public RgbColor GetAvgColor(Vector3 point) {
-        if(isLeaf) return avgColor;
-        else return childNodes[getChildIdx(point)].GetAvgColor(point);
-    }
+    //public RgbColor GetAvgColor(Vector3 point) {
+    //    if(isLeaf) return avgColor;
+    //    else return childNodes[getChildIdx(point)].GetAvgColor(point);
+    //}
 
     public abstract float GetProbability(Vector3 point);
 

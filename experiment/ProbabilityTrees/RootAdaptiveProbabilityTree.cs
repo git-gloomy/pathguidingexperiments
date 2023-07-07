@@ -102,16 +102,16 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
             float secondDeriv = 0.0f;
             
             float div = (1.0f / (float) samples.Count);
-            avgColor = new(0.0f);
+            //avgColor = new(0.0f);
             foreach (var sample in samples) {
                 firstDeriv += sample.FirstDeriv;
                 secondDeriv += sample.SecondDeriv;
-                avgColor += sample.RadianceEstimate;
+                //avgColor += sample.RadianceEstimate;
             }            
             
             firstDeriv *= div;
             secondDeriv *= div;
-            avgColor *= div;
+            //avgColor *= div;
             
             if(!(secondDeriv == 0 || float.IsNaN(firstDeriv) || float.IsNaN(secondDeriv))) {
                 guidingProbability = float.Clamp(guidingProbability - (firstDeriv / secondDeriv), 0.1f, 0.9f);
