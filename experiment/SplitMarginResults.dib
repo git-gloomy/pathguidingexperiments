@@ -1,0 +1,122 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
+#!fsharp
+
+#r "nuget: SimpleImageIO"
+open SimpleImageIO
+HTML(FlipBook.Header).Display() |> ignore
+
+#!fsharp
+
+let sceneName = "LampCaustic"
+let margins = [ 250; 500; 1000; 2500; 5000; 10000; 25000; 50000; 100000 ]
+let reference = new RgbImage("Results/" + sceneName + "/Reference.exr")
+
+let renderTime method =
+    let json = System.IO.File.ReadAllText("Results/" + sceneName + $"/{method}/Render.json")
+    let doc = System.Text.Json.JsonDocument.Parse(json)
+    doc.RootElement.GetProperty("RenderTime").GetDouble()
+
+#!markdown
+
+### Rendered images
+
+#!fsharp
+
+//let mutable rootAdaptive = FlipBook.New
+//
+//for margin in margins do
+//    rootAdaptive <- rootAdaptive.Add("Root Adaptive " + (string margin), new RgbImage("Results/" + sceneName + "/RootAdaptive" + (string margin) + "/Render.exr"))
+//
+//rootAdaptive |> HTML
+
+#!fsharp
+
+//let mutable kullbackLeibler = FlipBook.New
+//
+//for margin in margins do
+//    kullbackLeibler <- kullbackLeibler.Add("Kullback Leibler " + (string margin), new RgbImage("Results/" + sceneName + "/KullbackLeibler" + (string margin) + "/Render.exr"))
+//
+//kullbackLeibler |> HTML
+
+#!fsharp
+
+//let mutable secondMoment = FlipBook.New
+//
+//for margin in margins do
+//    secondMoment <- secondMoment.Add("Second Moment " + (string margin), new RgbImage("Results/" + sceneName + "/SecondMoment" + (string margin) + "/Render.exr"))
+//
+//secondMoment |> HTML
+
+#!markdown
+
+### False-color error images
+
+#!fsharp
+
+//let mutable MSEImages = FlipBook.New.WithToneMapper(FlipBook.InitialTMO.FalseColor(0.0f, 0.1f, false))
+//
+//for margin in margins do
+//    MSEImages <- MSEImages.Add("Root Adaptive " + (string margin), Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/RootAdaptive" + (string margin) + "/Render.exr"), reference))
+
+//for margin in margins do
+//    MSEImages <- MSEImages.Add("Kullback Leibler " + (string margin), Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/KullbackLeibler" + (string margin) + "/Render.exr"), reference))
+//
+//for margin in margins do
+//    MSEImages <- MSEImages.Add("Second Moment " + (string margin), Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/SecondMoment" + (string margin) + "/Render.exr"), reference))
+
+//MSEImages |> HTML
+
+#!fsharp
+
+let mutable kullbackLeibler = Map.empty
+
+for margin in margins do
+    kullbackLeibler <- kullbackLeibler.Add(margin, Metrics.RelMSE_OutlierRejection(new RgbImage("Results/" + sceneName + "/KullbackLeibler" + (string margin) + "/Render.exr"), reference, 0.01f))
+
+kullbackLeibler
+
+#!fsharp
+
+let mutable rootAdaptive = Map.empty
+
+for margin in margins do
+    rootAdaptive <- rootAdaptive.Add(margin, Metrics.RelMSE_OutlierRejection(new RgbImage("Results/" + sceneName + "/RootAdaptive" + (string margin) + "/Render.exr"), reference, 0.01f))
+
+rootAdaptive
+
+#!fsharp
+
+let mutable secondMoment = Map.empty
+
+for margin in margins do
+    secondMoment <- secondMoment.Add(margin, Metrics.RelMSE_OutlierRejection(new RgbImage("Results/" + sceneName + "/SecondMoment" + (string margin) + "/Render.exr"), reference, 0.1f))
+
+secondMoment
+
+#!fsharp
+
+let mutable kullbackLeiblerTime = Map.empty
+
+for margin in margins do
+    kullbackLeiblerTime <- kullbackLeiblerTime.Add(margin, 0.001 * (renderTime ("KullbackLeibler" + (string margin))))
+
+kullbackLeiblerTime
+
+#!fsharp
+
+let mutable rootAdaptiveTime = Map.empty
+
+for margin in margins do
+    rootAdaptiveTime <- rootAdaptiveTime.Add(margin, 0.001 * (renderTime ("RootAdaptive" + (string margin))))
+rootAdaptiveTime
+
+#!fsharp
+
+let mutable secondMomentTime = Map.empty
+
+for margin in margins do
+    secondMomentTime <- secondMomentTime.Add(margin, 0.001 * (renderTime ("SecondMoment" + (string margin))))
+secondMomentTime
