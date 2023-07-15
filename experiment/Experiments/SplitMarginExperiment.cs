@@ -16,29 +16,32 @@ public class SplitMarginExperiment : SeeSharp.Experiments.Experiment {
         List<Method> methods = new();
         int[] splitMargins = { 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000 };
 
+        
+
         foreach (int margin in splitMargins) {
+            IntegratorSettings settings = new() {
+                IncludeDebugVisualizations = true,
+                LearnInterval = 32,
+                TreeSplitMargin = margin
+            };
+            
             methods.Add(new Method("RootAdaptive" + margin, new RootAdaptiveGuidedPathTracer() {
                 TotalSpp = numSamples,
                 MaximumRenderTimeMs = maxTime,
                 NumShadowRays = 1,
-                IncludeDebugVisualizations = true,
-                ProbabilityLearningInterval = 32,
-                ProbabilityTreeSplitMargin = margin,
+                Settings = settings
             }));
             methods.Add(new Method("KullbackLeibler" + margin, new KullbackLeiblerGuidedPathTracer() {
                 TotalSpp = numSamples,
                 MaximumRenderTimeMs = maxTime,
                 NumShadowRays = 1,
-                IncludeDebugVisualizations = true,
-                ProbabilityTreeSplitMargin = margin,
+                Settings = settings
             }));
             methods.Add(new Method("SecondMoment" + margin, new SecondMomentGuidedPathTracer() {
                 TotalSpp = numSamples,
                 MaximumRenderTimeMs = maxTime,
                 NumShadowRays = 1,
-                IncludeDebugVisualizations = true,
-                ProbabilityLearningInterval = 32,
-                ProbabilityTreeSplitMargin = margin,
+                Settings = settings
             }));
         }
 

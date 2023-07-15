@@ -115,7 +115,7 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
             int selectedStrategy = 0;
             float minimumSecondMoment = float.PositiveInfinity;
             for (int i = 0; i < strategies.Length; i++) {
-                if (secondMoments[i] <= minimumSecondMoment) {
+                if (secondMoments[i] < minimumSecondMoment) {
                     minimumSecondMoment = secondMoments[i];
                     selectedStrategy = i;
                 }

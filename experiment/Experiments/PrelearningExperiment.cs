@@ -9,6 +9,13 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
     int numSamples = 16;
     int maxTime = int.MaxValue;
     Field guidingField;
+    IntegratorSettings settings = new() {
+        IncludeDebugVisualizations = true,
+        LearnInterval = 32,
+        EnableGuidingFieldLearning = false,
+        LearnUntil = 32,
+        FixProbabilityUntil = 32,
+    };
 
     public PrelearningExperiment(int numSamples, int maxTime = int.MaxValue) {
         this.numSamples = numSamples;
@@ -18,7 +25,7 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
     public override void OnStartScene(Scene scene, string dir, int minDepth, int maxDepth)
     {
         GuidedPathTracer pt = new() {
-            TotalSpp = 128,
+            TotalSpp = 100,
             MaximumRenderTimeMs = maxTime,
             NumShadowRays = 1,
             MinDepth = minDepth,
@@ -35,35 +42,21 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
             MaximumRenderTimeMs = maxTime,
             NumShadowRays = 1,
             GuidingField = guidingField,
-            IncludeDebugVisualizations = true,
-            ProbabilityLearningInterval = 32,
-            ProbabilityTreeSplitMargin = 10000,
-            EnableGuidingFieldLearning = false,
-            LearnUntil = 32,
-            FixProbabilityUntil = 32,
+            Settings = settings,
         }),
         new Method("PrelearnedKullbackLeibler", new KullbackLeiblerGuidedPathTracer() {
             TotalSpp = numSamples,
             MaximumRenderTimeMs = maxTime,
             NumShadowRays = 1,
             GuidingField = guidingField,
-            IncludeDebugVisualizations = true,
-            ProbabilityTreeSplitMargin = 10000,
-            EnableGuidingFieldLearning = false,
-            LearnUntil = 32,
-            FixProbabilityUntil = 32,
+            Settings = settings,
         }),
         new Method("PrelearnedSecondMoment", new SecondMomentGuidedPathTracer() {
             TotalSpp = numSamples,
             MaximumRenderTimeMs = maxTime,
             NumShadowRays = 1,
             GuidingField = guidingField,
-            IncludeDebugVisualizations = true,
-            ProbabilityLearningInterval = 32,
-            ProbabilityTreeSplitMargin = 10000,
-            EnableGuidingFieldLearning = false,
-            LearnUntil = 32,
-            FixProbabilityUntil = 32,
+            Settings = settings,
         })
     };
 }

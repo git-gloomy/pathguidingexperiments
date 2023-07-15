@@ -11,7 +11,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             Vector3 upper = scene.Bounds.Max + scene.Bounds.Diagonal * 0.01f;
             probabilityTree = new KullbackLeiblerProbabilityTree(
                 lower, upper, 
-                ProbabilityTreeSplitMargin
+                Settings.TreeSplitMargin
             );
 
             base.OnPrepareRender();

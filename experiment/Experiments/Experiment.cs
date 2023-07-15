@@ -7,6 +7,12 @@ namespace GuidedPathTracerExperiments;
 public class Experiment : SeeSharp.Experiments.Experiment {
     int numSamples = 16;
     int maxTime = int.MaxValue;
+    IntegratorSettings settings = new() {
+        IncludeDebugVisualizations = true,
+        LearnInterval = 1,
+        TreeSplitMargin = 400,
+    };
+
 
     public Experiment(int numSamples, int maxTime = int.MaxValue) {
         this.numSamples = numSamples;
@@ -28,24 +34,19 @@ public class Experiment : SeeSharp.Experiments.Experiment {
             TotalSpp = numSamples,
             MaximumRenderTimeMs = maxTime,
             NumShadowRays = 1,
-            IncludeDebugVisualizations = true,
-            ProbabilityLearningInterval = 1,
-            ProbabilityTreeSplitMargin = 10000,
+            Settings = settings,
         }),
         new("KullbackLeiblerGuidedPathTracer", new KullbackLeiblerGuidedPathTracer() {
             TotalSpp = numSamples,
             MaximumRenderTimeMs = maxTime,
             NumShadowRays = 1,
-            IncludeDebugVisualizations = true,
-            ProbabilityTreeSplitMargin = 5000,
+            Settings = settings,
         }),
         new("SecondMomentGuidedPathTracer", new SecondMomentGuidedPathTracer() {
             TotalSpp = numSamples,
             MaximumRenderTimeMs = maxTime,
             NumShadowRays = 1,
-            IncludeDebugVisualizations = true,
-            ProbabilityLearningInterval = 1,
-            ProbabilityTreeSplitMargin = 10000,
+            Settings = settings,
         })
     };
 }

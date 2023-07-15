@@ -28,34 +28,9 @@ namespace GuidedPathTracerExperiments.Integrators {
 
         public SpatialSettings SpatialSettings = new KdTreeSettings() { KnnLookup = true };
 
+        public IntegratorSettings Settings = new IntegratorSettings();
         public Field GuidingField;
         public bool GuidingEnabled { get; protected set; }
-
-        /// <summary>
-        /// If set to true, each iteration will be rendered as an individual layer in the .exr called
-        /// "iter0001" etc. Also, the guiding caches of each iteration will be visualized in false color
-        /// images in layers called "caches0001", "caches0002", ...
-        /// </summary>
-        public bool WriteIterationsAsLayers { get; set; }
-
-        /// <summary>
-        /// If set to true, the probabilities and incident radiance stored in the probabilityTree
-        /// will be rendered as layers in the .exr.
-        /// </summary>
-        public bool IncludeDebugVisualizations { get; set; }
-        protected int debugVisualizationInterval = 32;
-
-        /// <summary>
-        /// Determines how many samples have to be gathered in a leaf of the probabilityTree before
-        /// it is split up.
-        /// </summary>
-        public int ProbabilityTreeSplitMargin { get; set; }
-       
-        // The following 3 parameters are used in PrelearningExperiment
-        public bool EnableGuidingFieldLearning = true;
-        public int FixProbabilityUntil = -1;
-        public int LearnUntil = int.MaxValue;
-
 
         protected List<SingleIterationLayer> iterationRenderings = new();
         protected List<SingleIterationLayer> iterationCacheVisualizations = new();
@@ -70,7 +45,7 @@ namespace GuidedPathTracerExperiments.Integrators {
                                             bool isNextEvent) {
             base.RegisterSample(pixel, weight, misWeight, depth, isNextEvent);
 
-            if (WriteIterationsAsLayers) {
+            if (Settings.WriteIterationsAsLayers) {
                 var render = iterationRenderings[scene.FrameBuffer.CurIteration - 1];
                 render.Splat(pixel.Row, pixel.Col, weight * misWeight);
             }
@@ -98,7 +73,7 @@ namespace GuidedPathTracerExperiments.Integrators {
 
             GuidingEnabled = false;
 
-            if (WriteIterationsAsLayers) {
+            if (Settings.WriteIterationsAsLayers) {
                 for (int i = 0; i < TotalSpp; ++i) {
                     iterationRenderings.Add(new());
                     iterationCacheVisualizations.Add(new());
@@ -108,8 +83,8 @@ namespace GuidedPathTracerExperiments.Integrators {
             }
 
             
-            if (IncludeDebugVisualizations) {
-                for (int i = debugVisualizationInterval; i < TotalSpp; i += debugVisualizationInterval) {
+            if (Settings.IncludeDebugVisualizations) {
+                for (int i = Settings.debugVisualizationInterval; i < TotalSpp; i += Settings.debugVisualizationInterval) {
                     //incidentRadianceVisualizations.Add(new());
                     guidingProbabilityVisualizations.Add(new());
                     //scene.FrameBuffer.AddLayer($"learnedRadiance{i:0000}", incidentRadianceVisualizations[^1]);
@@ -128,8 +103,9 @@ namespace GuidedPathTracerExperiments.Integrators {
 
         protected override void OnPreIteration(uint iterIdx)
         {            
-            if (iterIdx + 1 > LearnUntil) enableProbabilityLearning = false;
-            if (iterIdx + 1 > FixProbabilityUntil) useLearnedProbabilities = true;
+            if (iterIdx + 1 > Settings.LearnUntil) enableProbabilityLearning = false;
+            if (iterIdx + 2 == Settings.FixProbabilityUntil) scene.FrameBuffer.Reset();
+            if (iterIdx + 1 > Settings.FixProbabilityUntil) useLearnedProbabilities = true;
         }
 
         protected override void OnPostIteration(uint iterIdx) {
@@ -164,7 +140,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             segment.Normal = hit.ShadingNormal;
             probSegment.Position = hit.Position;
 
-            if (WriteIterationsAsLayers && state.Depth == 1 && GuidingEnabled) {
+            if (Settings.WriteIterationsAsLayers && state.Depth == 1 && GuidingEnabled) {
                 var distrib = GetDistribution(-ray.Direction, hit, state);
                 if (distrib != null) {
                     var region = distrib.Region;
@@ -182,8 +158,8 @@ namespace GuidedPathTracerExperiments.Integrators {
             }
 
             int curIteration = scene.FrameBuffer.CurIteration - 1;
-            if (IncludeDebugVisualizations && state.Depth == 1) {
-                int iterationsSinceUpdate = curIteration % debugVisualizationInterval;
+            if (Settings.IncludeDebugVisualizations && state.Depth == 1) {
+                int iterationsSinceUpdate = curIteration % Settings.debugVisualizationInterval;
                 if(iterationsSinceUpdate == 0 && curIteration != 0) {
                     float p = probabilityTree.GetProbability(hit.Position);
                     RgbColor probabilityColor = new(
@@ -191,7 +167,7 @@ namespace GuidedPathTracerExperiments.Integrators {
                         hit ? 0.5f - float.Abs(p - 0.5f) : 0, 
                         hit ? 1.0f - p : 0
                     );
-                    guidingProbabilityVisualizations[(int) (curIteration / debugVisualizationInterval) - 1]
+                    guidingProbabilityVisualizations[(int) (curIteration / Settings.debugVisualizationInterval) - 1]
                         .Splat(state.Pixel.Col, state.Pixel.Row, probabilityColor);
 
                     //RgbColor incidentRadiance = probabilityTree.GetAvgColor(hit.Position);
@@ -371,7 +347,7 @@ namespace GuidedPathTracerExperiments.Integrators {
                 guideDirectLight: false,
                 rrAffectsDirectContribution: true);
             
-            if (EnableGuidingFieldLearning) 
+            if (Settings.EnableGuidingFieldLearning) 
                 sampleStorage.AddSamples(pathSegmentStorage.Value.SamplesRawPointer, num);
 
             if (enableProbabilityLearning) probPathSegmentStorage.Value.EvaluatePath(probabilityTree);
