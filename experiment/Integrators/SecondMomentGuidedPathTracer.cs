@@ -15,12 +15,6 @@ namespace GuidedPathTracerExperiments.Integrators {
         public int ProbabilityLearningInterval { get; set; }
 
         /// <summary>
-        /// Determines the probability to use path guided sampling instead of BSDF sampling at the
-        /// start of the rendering process.
-        /// </summary>
-        public float InitialGuidingProbability { get; set; }
-
-        /// <summary>
         /// If true, discards all samples for learning except the ones in the iteration used for
         /// learning
         /// </summary>
@@ -30,9 +24,10 @@ namespace GuidedPathTracerExperiments.Integrators {
             Vector3 lower = scene.Bounds.Min - scene.Bounds.Diagonal * 0.01f;
             Vector3 upper = scene.Bounds.Max + scene.Bounds.Diagonal * 0.01f;
             probabilityTree = new SecondMomentProbabilityTree(
-                InitialGuidingProbability, 
+                0.5f, 
                 lower, upper, 
-                ProbabilityTreeSplitMargin
+                ProbabilityTreeSplitMargin,
+                scene.FrameBuffer.Width * scene.FrameBuffer.Height * (MaxDepth + 1)
             );
 
             base.OnPrepareRender();
@@ -46,6 +41,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             } else {
                 enableProbabilityLearning = false;
             }
+            base.OnPreIteration(iterIdx);
         }
 
         protected override void OnPostIteration(uint iterIdx) {
@@ -54,7 +50,7 @@ namespace GuidedPathTracerExperiments.Integrators {
 
             // Update mixture ratio every ProbabilityLearningInterval iterations
             int iterationsSinceUpdate = ((int) iterIdx + 1) % ProbabilityLearningInterval;
-            if(iterationsSinceUpdate == 0 && iterIdx + 1 != TotalSpp) {
+            if(iterationsSinceUpdate == 0 && iterIdx + 1 != TotalSpp && enableProbabilityLearning) {
                 ((SecondMomentProbabilityTree) probabilityTree).LearnProbabilities();
             }
 

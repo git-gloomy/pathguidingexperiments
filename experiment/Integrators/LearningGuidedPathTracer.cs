@@ -50,6 +50,12 @@ namespace GuidedPathTracerExperiments.Integrators {
         /// it is split up.
         /// </summary>
         public int ProbabilityTreeSplitMargin { get; set; }
+       
+        // The following 3 parameters are used in PrelearningExperiment
+        public bool EnableGuidingFieldLearning = true;
+        public int FixProbabilityUntil = -1;
+        public int LearnUntil = int.MaxValue;
+
 
         protected List<SingleIterationLayer> iterationRenderings = new();
         protected List<SingleIterationLayer> iterationCacheVisualizations = new();
@@ -57,8 +63,8 @@ namespace GuidedPathTracerExperiments.Integrators {
         //protected List<SingleIterationLayer> incidentRadianceVisualizations = new();
         protected List<SingleIterationLayer> guidingProbabilityVisualizations = new();
 
-        // Used by RootAdaptive/SecondMomentGuidedPathTracer if SingleIterationLearning is set to true
         protected bool enableProbabilityLearning = true;
+        protected bool useLearnedProbabilities = false;
 
         public override void RegisterSample(Pixel pixel, RgbColor weight, float misWeight, uint depth,
                                             bool isNextEvent) {
@@ -71,15 +77,18 @@ namespace GuidedPathTracerExperiments.Integrators {
         }
 
         protected override void OnPrepareRender() {
-            GuidingField = new(new() {
-                SpatialSettings = SpatialSettings
-            });
-            Vector3 lower = scene.Bounds.Min - scene.Bounds.Diagonal * 0.01f;
-            Vector3 upper = scene.Bounds.Max + scene.Bounds.Diagonal * 0.01f;
-            GuidingField.SceneBounds = new() {
-                Lower = lower,
-                Upper = upper
-            };
+            if(GuidingField == null) {
+                GuidingField = new(new() {
+                    SpatialSettings = SpatialSettings
+                });
+                Vector3 lower = scene.Bounds.Min - scene.Bounds.Diagonal * 0.01f;
+                Vector3 upper = scene.Bounds.Max + scene.Bounds.Diagonal * 0.01f;
+                GuidingField.SceneBounds = new() {
+                    Lower = lower,
+                    Upper = upper
+                };
+            }
+            
 
             sampleStorage = new();
             int numPixels = scene.FrameBuffer.Width * scene.FrameBuffer.Height;
@@ -109,6 +118,18 @@ namespace GuidedPathTracerExperiments.Integrators {
             }
 
             base.OnPrepareRender();
+        }
+
+        protected override void OnAfterRender()
+        {
+            base.OnAfterRender();
+            probabilityTree = null;
+        }
+
+        protected override void OnPreIteration(uint iterIdx)
+        {            
+            if (iterIdx + 1 > LearnUntil) enableProbabilityLearning = false;
+            if (iterIdx + 1 > FixProbabilityUntil) useLearnedProbabilities = true;
         }
 
         protected override void OnPostIteration(uint iterIdx) {
@@ -184,6 +205,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             float roughness = hit.Material.GetRoughness(hit);
             if (roughness < 0.1f) return 0;
             if (hit.Material.IsTransmissive(hit)) return 0;
+            if (!useLearnedProbabilities) return 0.5f;
             return probabilityTree.GetProbability(hit.Position);
         }
 
@@ -348,7 +370,9 @@ namespace GuidedPathTracerExperiments.Integrators {
                 useNEEMiWeights: false,
                 guideDirectLight: false,
                 rrAffectsDirectContribution: true);
-            sampleStorage.AddSamples(pathSegmentStorage.Value.SamplesRawPointer, num);
+            
+            if (EnableGuidingFieldLearning) 
+                sampleStorage.AddSamples(pathSegmentStorage.Value.SamplesRawPointer, num);
 
             if (enableProbabilityLearning) probPathSegmentStorage.Value.EvaluatePath(probabilityTree);
             else probPathSegmentStorage.Value.Clear();
