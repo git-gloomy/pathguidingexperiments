@@ -10,35 +10,40 @@ HTML(FlipBook.Header).Display() |> ignore
 
 #!fsharp
 
-#r "nuget: Plotly.NET, 2.0.0-preview.9"
-#r "nuget: Plotly.NET.Interactive, 2.0.0-preview.9"
+#r "nuget: Plotly.NET, 2.0.0"
+#r "nuget: Plotly.NET.Interactive, 2.0.0"
 open Plotly.NET
 
 #!fsharp
 
-let sceneName = "CountryKitchen"
+let sceneName = "RoughGlassesIndirect"
+let path = ("Results/" + sceneName + "/Prelearned")
+let reference = new RgbImage("Results/" + sceneName + "/Reference.exr")
+
+#!fsharp
+
 let renderTime method =
-    let json = System.IO.File.ReadAllText("Results/" + sceneName + $"/{method}/Render.json")
+    let json = System.IO.File.ReadAllText(path + $"/{method}/Render.json")
     let doc = System.Text.Json.JsonDocument.Parse(json)
     doc.RootElement.GetProperty("RenderTime").GetDouble()
 Map [
-    ("Guided path tracing (Kullback-Leibler)", 0.001 * renderTime "PrelearnedKullbackLeibler")
-    ("Guided path tracing (root adaptive)", 0.001 * renderTime "PrelearnedRootAdaptive")
-    ("Guided path tracing (second moment)", 0.001 * renderTime "PrelearnedSecondMoment")
+    ("Guided path tracing (Kullback-Leibler)", 0.001 * renderTime "KullbackLeibler")
+    ("Guided path tracing (Root Adaptive)", 0.001 * renderTime "RootAdaptive")
+    ("Guided path tracing (Second Moment)", 0.001 * renderTime "SecondMoment")
 ]
 
 #!fsharp
 
 Map [
-    ("PrelearnedKullbackLeibler" , Metrics.RelMSE_OutlierRejection(new RgbImage("Results/" + sceneName + "/PrelearnedKullbackLeibler/Render.exr"), reference, 0.01f))
-    ("PrelearnedRootAdaptive" , Metrics.RelMSE_OutlierRejection(new RgbImage("Results/" + sceneName + "/PrelearnedRootAdaptive/Render.exr"), reference, 0.01f))
-    ("PrelearnedSecondMoment" , Metrics.RelMSE_OutlierRejection(new RgbImage("Results/" + sceneName + "/PrelearnedSecondMoment/Render.exr"), reference, 0.01f))
+    ("KullbackLeibler" , Metrics.RelMSE_OutlierRejection(new RgbImage(path + "/KullbackLeibler/Render.exr"), reference, 0.01f))
+    ("RootAdaptive" , Metrics.RelMSE_OutlierRejection(new RgbImage(path + "/RootAdaptive/Render.exr"), reference, 0.01f))
+    ("SecondMoment" , Metrics.RelMSE_OutlierRejection(new RgbImage(path + "/SecondMoment/Render.exr"), reference, 0.01f))
 ]
 
 #!fsharp
 
 let relMSE method ignore =
-    let json = System.IO.File.ReadAllText("Results/" + sceneName + $"/{method}/Render.json")
+    let json = System.IO.File.ReadAllText(path + $"/{method}/Render.json")
     let doc = System.Text.Json.JsonDocument.Parse(json)
     let errors = doc.RootElement.GetProperty("ErrorMetrics").EnumerateArray()
     let mutable map = Map.empty
@@ -51,20 +56,24 @@ let relMSE method ignore =
         ignore_count <- ignore_count + 1
     map
 
-let pt = relMSE "PathTracingPL" 0
-let gpt = relMSE "PathGuidingPL" 0
-let ra = relMSE "PrelearnedRootAdaptive" 32
-let kl = relMSE "PrelearnedKullbackLeibler" 32
-let sm = relMSE "PrelearnedSecondMoment" 32
+let pt = relMSE "PathTracing" 0
+let gpt = relMSE "PathGuiding" 0
+let gpt02 = relMSE "PathGuiding02" 0
+let gpt08 = relMSE "PathGuiding08" 0
+let ra = relMSE "RootAdaptive" 25
+let kl = relMSE "KullbackLeibler" 25
+let sm = relMSE "SecondMoment" 25
 
 let layout = Layout.init(Height = 1, Width = 4)
 let combine = 
     [   
-        Chart.Line(Seq.cast(pt.Keys), Seq.cast(pt.Values), Name = "PathTracer")
-        Chart.Line(Seq.cast(gpt.Keys), Seq.cast(gpt.Values), Name = "GuidedPathTracer")
-        Chart.Line(Seq.cast(ra.Keys), Seq.cast(ra.Values), Name = "RootAdaptive")
-        Chart.Line(Seq.cast(kl.Keys), Seq.cast(kl.Values), Name = "KullbackLeibler")
-        Chart.Line(Seq.cast(sm.Keys), Seq.cast(sm.Values), Name = "SecondMoment") 
+        //Chart.Line(Seq.cast(pt.Keys), Seq.cast(pt.Values), Name = "Path Tracer")
+        Chart.Line(Seq.cast(gpt02.Keys), Seq.cast(gpt02.Values), Name = "Guided Path Tracer (0.2)")
+        Chart.Line(Seq.cast(gpt.Keys), Seq.cast(gpt.Values), Name = "Guided Path Tracer (0.5)")
+        Chart.Line(Seq.cast(gpt08.Keys), Seq.cast(gpt08.Values), Name = "Guided Path Tracer (0.8)")
+        Chart.Line(Seq.cast(ra.Keys), Seq.cast(ra.Values), Name = "Root Adaptive")
+        Chart.Line(Seq.cast(kl.Keys), Seq.cast(kl.Values), Name = "Kullback Leibler")
+        Chart.Line(Seq.cast(sm.Keys), Seq.cast(sm.Values), Name = "Second Moment") 
     ]
     |> Chart.combine
     |> Chart.withLayout(layout)
@@ -78,9 +87,9 @@ let combine =
 #!fsharp
 
 FlipBook.New
-    .Add("Guided path tracing (Kullback-Leibler)", new RgbImage("Results/" + sceneName + "/PrelearnedKullbackLeibler/Render.exr"))
-    .Add("Guided path tracing (root adaptive)", new RgbImage("Results/" + sceneName + "/PrelearnedRootAdaptive/Render.exr"))
-    .Add("Guided path tracing (second moment)", new RgbImage("Results/" + sceneName + "/PrelearnedSecondMoment/Render.exr"))
+    .Add("Guided path tracing (Kullback-Leibler)", new RgbImage(path + "/KullbackLeibler/Render.exr"))
+    .Add("Guided path tracing (root adaptive)", new RgbImage(path + "/RootAdaptive/Render.exr"))
+    .Add("Guided path tracing (second moment)", new RgbImage(path + "/SecondMoment/Render.exr"))
 |> HTML
 
 #!markdown
@@ -89,10 +98,9 @@ FlipBook.New
 
 #!fsharp
 
-let reference = new RgbImage("Results/" + sceneName + "/Reference.exr")
 FlipBook.New
     .WithToneMapper(FlipBook.InitialTMO.FalseColor(0.0f, 0.1f, false))
-    .Add("Guided path tracing (Kullback-Leibler)", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/PrelearnedKullbackLeibler/Render.exr"), reference))
-    .Add("Guided path tracing (root adaptive)", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/PrelearnedRootAdaptive/Render.exr"), reference))
-    .Add("Guided path tracing (second moment)", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/PrelearnedSecondMoment/Render.exr"), reference))
+    .Add("Guided path tracing (Kullback-Leibler)", Metrics.RelMSEImage(new RgbImage(path + "/KullbackLeibler/Render.exr"), reference))
+    .Add("Guided path tracing (root adaptive)", Metrics.RelMSEImage(new RgbImage(path + "/RootAdaptive/Render.exr"), reference))
+    .Add("Guided path tracing (second moment)", Metrics.RelMSEImage(new RgbImage(path + "/SecondMoment/Render.exr"), reference))
 |> HTML

@@ -37,5 +37,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         /// If true, discards all samples for learning except the ones in the learning iteration
         /// </summary>
         public bool SingleIterationLearning = false;
+
+        public float FixedProbability = 0.5f;
     }
 }

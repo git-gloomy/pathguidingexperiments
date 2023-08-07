@@ -199,7 +199,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             float roughness = hit.Material.GetRoughness(hit);
             if (roughness < 0.1f) return 0;
             if (hit.Material.IsTransmissive(hit)) return 0;
-            if (!useLearnedProbabilities) return 0.5f;
+            if (!useLearnedProbabilities) return Settings.FixedProbability;
             return probabilityTree.GetProbability(hit.Position);
         }
 

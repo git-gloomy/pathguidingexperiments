@@ -27,20 +27,14 @@ public class SplitMarginExperiment : SeeSharp.Experiments.Experiment {
             
             methods.Add(new Method("RootAdaptive" + margin, new RootAdaptiveGuidedPathTracer() {
                 TotalSpp = numSamples,
-                MaximumRenderTimeMs = maxTime,
-                NumShadowRays = 1,
                 Settings = settings
             }));
             methods.Add(new Method("KullbackLeibler" + margin, new KullbackLeiblerGuidedPathTracer() {
                 TotalSpp = numSamples,
-                MaximumRenderTimeMs = maxTime,
-                NumShadowRays = 1,
                 Settings = settings
             }));
             methods.Add(new Method("SecondMoment" + margin, new SecondMomentGuidedPathTracer() {
                 TotalSpp = numSamples,
-                MaximumRenderTimeMs = maxTime,
-                NumShadowRays = 1,
                 Settings = settings
             }));
         }

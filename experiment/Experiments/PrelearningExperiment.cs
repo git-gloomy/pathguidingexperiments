@@ -7,20 +7,23 @@ using SeeSharp.Integrators;
 namespace GuidedPathTracerExperiments;
 
 public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
-    int numSamples = 16;
+    int renderSamples = 50;
+    int learningSamples = 25;
     int maxTime = int.MaxValue;
     Field guidingField;
-    IntegratorSettings settings = new() {
-        IncludeDebugVisualizations = true,
-        LearnInterval = 32,
-        EnableGuidingFieldLearning = false,
-        LearnUntil = 32,
-        FixProbabilityUntil = 32,
-    };
+    IntegratorSettings settings;
 
-    public PrelearningExperiment(int numSamples, int maxTime = int.MaxValue) {
-        this.numSamples = numSamples;
+    public PrelearningExperiment(int learningSamples, int renderSamples, int maxTime = int.MaxValue) {
+        this.learningSamples = learningSamples;
+        this.renderSamples = renderSamples;
         this.maxTime = maxTime;
+        this.settings = new() {
+            IncludeDebugVisualizations = true,
+            LearnInterval = learningSamples,
+            EnableGuidingFieldLearning = false,
+            LearnUntil = learningSamples,
+            FixProbabilityUntil = learningSamples,
+        };
     }
 
     public override void OnStartScene(Scene scene, string dir, int minDepth, int maxDepth)
@@ -38,46 +41,58 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
 
     // Only one method should be commented in at a time, as all use the same guiding field
     public override List<Method> MakeMethods() => new() {
-        new Method("PathTracingPL", new PathTracer() {
-            TotalSpp = numSamples - 32,
-            MaximumRenderTimeMs = maxTime,
-            NumShadowRays = 1,
-            BaseSeed = 12345,
+        new Method("Prelearned/PathTracing", new PathTracer() {
+            TotalSpp = renderSamples,
         }),
-        new Method("PathGuidingPL", new RootAdaptiveGuidedPathTracer() {
-            TotalSpp = numSamples - 32,
-            MaximumRenderTimeMs = maxTime,
-            NumShadowRays = 1,
+        new Method("Prelearned/PathGuiding", new RootAdaptiveGuidedPathTracer() {
+            TotalSpp = renderSamples,
+            GuidingField = guidingField,
             Settings = new() { // Settings are configured in a way to disable learning
                 IncludeDebugVisualizations = true,
-                LearnInterval = 32,
+                LearnInterval = learningSamples,
                 EnableGuidingFieldLearning = false,
                 LearnUntil = 0,
-                FixProbabilityUntil = numSamples,
+                FixProbabilityUntil = renderSamples,
             },
-            BaseSeed = 12345,
         }),
-        new Method("PrelearnedRootAdaptive", new RootAdaptiveGuidedPathTracer() {
-            TotalSpp = numSamples,
-            MaximumRenderTimeMs = maxTime,
-            NumShadowRays = 1,
+        new Method("Prelearned/PathGuiding02", new RootAdaptiveGuidedPathTracer() {
+            TotalSpp = renderSamples,
+            GuidingField = guidingField,
+            Settings = new() { // Settings are configured in a way to disable learning
+                IncludeDebugVisualizations = true,
+                LearnInterval = learningSamples,
+                EnableGuidingFieldLearning = false,
+                LearnUntil = 0,
+                FixProbabilityUntil = renderSamples,
+                FixedProbability = 0.2f,
+            },
+        }),
+        new Method("Prelearned/PathGuiding08", new RootAdaptiveGuidedPathTracer() {
+            TotalSpp = renderSamples,
+            GuidingField = guidingField,
+            Settings = new() { // Settings are configured in a way to disable learning
+                IncludeDebugVisualizations = true,
+                LearnInterval = learningSamples,
+                EnableGuidingFieldLearning = false,
+                LearnUntil = 0,
+                FixProbabilityUntil = renderSamples,
+                FixedProbability = 0.8f,
+            },
+        }),
+        new Method("Prelearned/RootAdaptive", new RootAdaptiveGuidedPathTracer() {
+            TotalSpp = learningSamples + renderSamples,
             GuidingField = guidingField,
             Settings = settings,
         }),
-        new Method("PrelearnedKullbackLeibler", new KullbackLeiblerGuidedPathTracer() {
-            TotalSpp = numSamples,
-            MaximumRenderTimeMs = maxTime,
-            NumShadowRays = 1,
+        new Method("Prelearned/SecondMoment", new SecondMomentGuidedPathTracer() {
+            TotalSpp = learningSamples + renderSamples,
             GuidingField = guidingField,
             Settings = settings,
         }),
-        new Method("PrelearnedSecondMoment", new SecondMomentGuidedPathTracer() {
-            TotalSpp = numSamples,
-            MaximumRenderTimeMs = maxTime,
-            NumShadowRays = 1,
+        new Method("Prelearned/KullbackLeibler", new KullbackLeiblerGuidedPathTracer() {
+            TotalSpp = learningSamples + renderSamples,
             GuidingField = guidingField,
             Settings = settings,
-            BaseSeed = 12345,
-        })
+        }),
     };
 }
