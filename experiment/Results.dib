@@ -10,11 +10,57 @@ HTML(FlipBook.Header).Display() |> ignore
 
 #!fsharp
 
-let sceneName = "CornellBox"
+#r "nuget: Plotly.NET, 2.0.0-preview.9"
+#r "nuget: Plotly.NET.Interactive, 2.0.0-preview.9"
+open Plotly.NET
+
+#!fsharp
+
+let sceneName = "CountryKitchen"
 let renderTime method =
     let json = System.IO.File.ReadAllText("Results/" + sceneName + $"/{method}/Render.json")
     let doc = System.Text.Json.JsonDocument.Parse(json)
     doc.RootElement.GetProperty("RenderTime").GetDouble()
+Map [
+    ("Guided path tracing (root adaptive)", 0.001 * renderTime "RootAdaptiveGuidedPathTracer")
+    ("Guided path tracing (Kullback-Leibler)", 0.001 * renderTime "KullbackLeiblerGuidedPathTracer")
+    ("Guided path tracing (second moment)", 0.001 * renderTime "SecondMomentGuidedPathTracer")
+]
+
+#!fsharp
+
+let relMSE method =
+    let json = System.IO.File.ReadAllText("Results/" + sceneName + $"/{method}/Render.json")
+    let doc = System.Text.Json.JsonDocument.Parse(json)
+    let errors = doc.RootElement.GetProperty("ErrorMetrics").EnumerateArray()
+    let mutable map = Map.empty
+    let mutable count = 1
+    for e in errors do
+        map <- map.Add(count, e.GetProperty("RelMSE_Outlier").GetDouble())
+        count <- count + 1
+    map
+
+let pt = relMSE "PathTracer"
+let gpt = relMSE "GuidedPathTracer"
+let ra = relMSE "RootAdaptiveGuidedPathTracer"
+let kl = relMSE "KullbackLeiblerGuidedPathTracer"
+let sm = relMSE "SecondMomentGuidedPathTracer"
+let layout = Layout.init(Height = 1, Width = 4)
+let combine = 
+    [   
+        Chart.Line(Seq.cast(pt.Keys), Seq.cast(pt.Values), Name = "PathTracer")
+        Chart.Line(Seq.cast(gpt.Keys), Seq.cast(gpt.Values), Name = "GuidedPathTracer")
+        Chart.Line(Seq.cast(ra.Keys), Seq.cast(ra.Values), Name = "RootAdaptive")
+        Chart.Line(Seq.cast(kl.Keys), Seq.cast(kl.Values), Name = "KullbackLeibler")
+        Chart.Line(Seq.cast(sm.Keys), Seq.cast(sm.Values), Name = "SecondMoment") 
+    ]
+    |> Chart.combine
+    |> Chart.withLayout(layout)
+    |> Chart.withTitle(sceneName + ": Relative Mean Squared Error")
+    |> Chart.show
+
+#!fsharp
+
 Map [
     ("Path tracing", 0.001 * renderTime "PathTracer")
     ("Guided path tracing", 0.001 * renderTime "GuidedPathTracer")

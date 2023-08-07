@@ -1,0 +1,98 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
+#!fsharp
+
+#r "nuget: SimpleImageIO"
+open SimpleImageIO
+HTML(FlipBook.Header).Display() |> ignore
+
+#!fsharp
+
+#r "nuget: Plotly.NET, 2.0.0-preview.9"
+#r "nuget: Plotly.NET.Interactive, 2.0.0-preview.9"
+open Plotly.NET
+
+#!fsharp
+
+let sceneName = "CountryKitchen"
+let renderTime method =
+    let json = System.IO.File.ReadAllText("Results/" + sceneName + $"/{method}/Render.json")
+    let doc = System.Text.Json.JsonDocument.Parse(json)
+    doc.RootElement.GetProperty("RenderTime").GetDouble()
+Map [
+    ("Guided path tracing (Kullback-Leibler)", 0.001 * renderTime "PrelearnedKullbackLeibler")
+    ("Guided path tracing (root adaptive)", 0.001 * renderTime "PrelearnedRootAdaptive")
+    ("Guided path tracing (second moment)", 0.001 * renderTime "PrelearnedSecondMoment")
+]
+
+#!fsharp
+
+Map [
+    ("PrelearnedKullbackLeibler" , Metrics.RelMSE_OutlierRejection(new RgbImage("Results/" + sceneName + "/PrelearnedKullbackLeibler/Render.exr"), reference, 0.01f))
+    ("PrelearnedRootAdaptive" , Metrics.RelMSE_OutlierRejection(new RgbImage("Results/" + sceneName + "/PrelearnedRootAdaptive/Render.exr"), reference, 0.01f))
+    ("PrelearnedSecondMoment" , Metrics.RelMSE_OutlierRejection(new RgbImage("Results/" + sceneName + "/PrelearnedSecondMoment/Render.exr"), reference, 0.01f))
+]
+
+#!fsharp
+
+let relMSE method ignore =
+    let json = System.IO.File.ReadAllText("Results/" + sceneName + $"/{method}/Render.json")
+    let doc = System.Text.Json.JsonDocument.Parse(json)
+    let errors = doc.RootElement.GetProperty("ErrorMetrics").EnumerateArray()
+    let mutable map = Map.empty
+    let mutable count = 1
+    let mutable ignore_count = 1
+    for e in errors do
+        if ignore_count > ignore then
+            map <- map.Add(count, e.GetProperty("RelMSE_Outlier").GetDouble())
+            count <- count + 1
+        ignore_count <- ignore_count + 1
+    map
+
+let pt = relMSE "PathTracingPL" 0
+let gpt = relMSE "PathGuidingPL" 0
+let ra = relMSE "PrelearnedRootAdaptive" 32
+let kl = relMSE "PrelearnedKullbackLeibler" 32
+let sm = relMSE "PrelearnedSecondMoment" 32
+
+let layout = Layout.init(Height = 1, Width = 4)
+let combine = 
+    [   
+        Chart.Line(Seq.cast(pt.Keys), Seq.cast(pt.Values), Name = "PathTracer")
+        Chart.Line(Seq.cast(gpt.Keys), Seq.cast(gpt.Values), Name = "GuidedPathTracer")
+        Chart.Line(Seq.cast(ra.Keys), Seq.cast(ra.Values), Name = "RootAdaptive")
+        Chart.Line(Seq.cast(kl.Keys), Seq.cast(kl.Values), Name = "KullbackLeibler")
+        Chart.Line(Seq.cast(sm.Keys), Seq.cast(sm.Values), Name = "SecondMoment") 
+    ]
+    |> Chart.combine
+    |> Chart.withLayout(layout)
+    |> Chart.withTitle(sceneName + ": Relative Mean Squared Error")
+    |> Chart.show
+
+#!markdown
+
+### Rendered images
+
+#!fsharp
+
+FlipBook.New
+    .Add("Guided path tracing (Kullback-Leibler)", new RgbImage("Results/" + sceneName + "/PrelearnedKullbackLeibler/Render.exr"))
+    .Add("Guided path tracing (root adaptive)", new RgbImage("Results/" + sceneName + "/PrelearnedRootAdaptive/Render.exr"))
+    .Add("Guided path tracing (second moment)", new RgbImage("Results/" + sceneName + "/PrelearnedSecondMoment/Render.exr"))
+|> HTML
+
+#!markdown
+
+### False-color error images
+
+#!fsharp
+
+let reference = new RgbImage("Results/" + sceneName + "/Reference.exr")
+FlipBook.New
+    .WithToneMapper(FlipBook.InitialTMO.FalseColor(0.0f, 0.1f, false))
+    .Add("Guided path tracing (Kullback-Leibler)", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/PrelearnedKullbackLeibler/Render.exr"), reference))
+    .Add("Guided path tracing (root adaptive)", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/PrelearnedRootAdaptive/Render.exr"), reference))
+    .Add("Guided path tracing (second moment)", Metrics.RelMSEImage(new RgbImage("Results/" + sceneName + "/PrelearnedSecondMoment/Render.exr"), reference))
+|> HTML

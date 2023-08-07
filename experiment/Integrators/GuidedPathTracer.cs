@@ -9,6 +9,7 @@ using SeeSharp.Integrators;
 using SeeSharp.Images;
 using SimpleImageIO;
 using TinyEmbree;
+using SeeSharp.Sampling;
 
 namespace GuidedPathTracerExperiments.Integrators {
 
@@ -48,6 +49,26 @@ namespace GuidedPathTracerExperiments.Integrators {
                 var render = iterationRenderings[scene.FrameBuffer.CurIteration - 1];
                 render.Splat(pixel.Row, pixel.Col, weight * misWeight);
             }
+        }
+
+        protected override void RenderPixel(uint row, uint col, RNG rng) {
+        // Sample a ray from the camera
+            var offset = rng.NextFloat2D();
+            var pixel = new Vector2(col, row) + offset;
+            Ray primaryRay = scene.Camera.GenerateRay(pixel, rng).Ray;
+    
+            var state = MakePathState();
+            state.Pixel = new((int)col, (int)row);
+            state.Rng = rng;
+            state.Throughput = RgbColor.White;
+            state.Depth = 1;
+    
+            OnStartPath(state);
+            var estimate = EstimateIncidentRadiance(primaryRay, state);
+            OnFinishedPath(estimate, state);
+
+            if(float.IsFinite(estimate.Outgoing.R) && float.IsFinite(estimate.Outgoing.G) && float.IsFinite(estimate.Outgoing.B))
+                scene.FrameBuffer.Splat(state.Pixel, estimate.Outgoing);
         }
 
         protected override void OnPrepareRender() {

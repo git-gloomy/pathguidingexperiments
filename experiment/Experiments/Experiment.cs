@@ -10,7 +10,7 @@ public class Experiment : SeeSharp.Experiments.Experiment {
     IntegratorSettings settings = new() {
         IncludeDebugVisualizations = true,
         LearnInterval = 1,
-        TreeSplitMargin = 400,
+        TreeSplitMargin = 2000,
     };
 
 

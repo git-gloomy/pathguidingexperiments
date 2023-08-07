@@ -10,6 +10,7 @@ using SeeSharp.Images;
 using SimpleImageIO;
 using TinyEmbree;
 using GuidedPathTracerExperiments.ProbabilityTrees;
+using SeeSharp.Sampling;
 
 namespace GuidedPathTracerExperiments.Integrators {
 
@@ -49,6 +50,26 @@ namespace GuidedPathTracerExperiments.Integrators {
                 var render = iterationRenderings[scene.FrameBuffer.CurIteration - 1];
                 render.Splat(pixel.Row, pixel.Col, weight * misWeight);
             }
+        }
+
+        protected override void RenderPixel(uint row, uint col, RNG rng) {
+        // Sample a ray from the camera
+            var offset = rng.NextFloat2D();
+            var pixel = new Vector2(col, row) + offset;
+            Ray primaryRay = scene.Camera.GenerateRay(pixel, rng).Ray;
+    
+            var state = MakePathState();
+            state.Pixel = new((int)col, (int)row);
+            state.Rng = rng;
+            state.Throughput = RgbColor.White;
+            state.Depth = 1;
+    
+            OnStartPath(state);
+            var estimate = EstimateIncidentRadiance(primaryRay, state);
+            OnFinishedPath(estimate, state);
+
+            if(!float.IsNaN(estimate.Outgoing.R) && !float.IsNaN(estimate.Outgoing.G) && !float.IsNaN(estimate.Outgoing.B))
+                scene.FrameBuffer.Splat(state.Pixel, estimate.Outgoing);
         }
 
         protected override void OnPrepareRender() {
@@ -100,18 +121,15 @@ namespace GuidedPathTracerExperiments.Integrators {
             base.OnAfterRender();
             probabilityTree = null;
         }
-
-        protected override void OnPreIteration(uint iterIdx)
-        {            
-            if (iterIdx + 1 > Settings.LearnUntil) enableProbabilityLearning = false;
-            if (iterIdx + 2 == Settings.FixProbabilityUntil) scene.FrameBuffer.Reset();
-            if (iterIdx + 1 > Settings.FixProbabilityUntil) useLearnedProbabilities = true;
-        }
-
+        
         protected override void OnPostIteration(uint iterIdx) {
+            uint nextIdx = iterIdx + 1;
+            if (nextIdx >= Settings.LearnUntil) enableProbabilityLearning = false;
+            if (nextIdx == Settings.FixProbabilityUntil) scene.FrameBuffer.Reset();
+            if (nextIdx >= Settings.FixProbabilityUntil) useLearnedProbabilities = true;
+
             GuidingField.Update(sampleStorage, 1);
             sampleStorage.Clear();
-
             GuidingEnabled = true;
         }
 

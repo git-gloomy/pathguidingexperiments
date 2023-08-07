@@ -13,12 +13,13 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected override void OnPrepareRender() {
             Vector3 lower = scene.Bounds.Min - scene.Bounds.Diagonal * 0.01f;
             Vector3 upper = scene.Bounds.Max + scene.Bounds.Diagonal * 0.01f;
-            probabilityTree = new RootAdaptiveProbabilityTree(
-                Settings.InitialGuidingProbability, 
-                lower, upper, 
-                Settings.TreeSplitMargin,
-                scene.FrameBuffer.Width * scene.FrameBuffer.Height * (MaxDepth + 1)
-            );
+            if (probabilityTree == null)
+                probabilityTree = new RootAdaptiveProbabilityTree(
+                    Settings.InitialGuidingProbability, 
+                    lower, upper, 
+                    Settings.TreeSplitMargin,
+                    scene.FrameBuffer.Width * scene.FrameBuffer.Height * (MaxDepth + 1)
+                );
 
             base.OnPrepareRender();
         }
@@ -35,16 +36,13 @@ namespace GuidedPathTracerExperiments.Integrators {
         }
 
         protected override void OnPostIteration(uint iterIdx) {
-            GuidingField.Update(sampleStorage, 1);
-            sampleStorage.Clear();
+            base.OnPostIteration(iterIdx);
 
             // Update mixture ratio every ProbabilityLearningInterval iterations
             int iterationsSinceUpdate = ((int) iterIdx + 1) % Settings.LearnInterval;
             if(iterationsSinceUpdate == 0 && iterIdx + 1 != TotalSpp && enableProbabilityLearning) {
                 ((RootAdaptiveProbabilityTree) probabilityTree).LearnProbabilities();
             }
-
-            GuidingEnabled = true;
         }
     }
 }

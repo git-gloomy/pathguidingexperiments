@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using GuidedPathTracerExperiments.Integrators;
 using OpenPGL.NET;
 using SeeSharp;
+using SeeSharp.Integrators;
 
 namespace GuidedPathTracerExperiments;
 
@@ -37,6 +38,25 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
 
     // Only one method should be commented in at a time, as all use the same guiding field
     public override List<Method> MakeMethods() => new() {
+        new Method("PathTracingPL", new PathTracer() {
+            TotalSpp = numSamples - 32,
+            MaximumRenderTimeMs = maxTime,
+            NumShadowRays = 1,
+            BaseSeed = 12345,
+        }),
+        new Method("PathGuidingPL", new RootAdaptiveGuidedPathTracer() {
+            TotalSpp = numSamples - 32,
+            MaximumRenderTimeMs = maxTime,
+            NumShadowRays = 1,
+            Settings = new() { // Settings are configured in a way to disable learning
+                IncludeDebugVisualizations = true,
+                LearnInterval = 32,
+                EnableGuidingFieldLearning = false,
+                LearnUntil = 0,
+                FixProbabilityUntil = numSamples,
+            },
+            BaseSeed = 12345,
+        }),
         new Method("PrelearnedRootAdaptive", new RootAdaptiveGuidedPathTracer() {
             TotalSpp = numSamples,
             MaximumRenderTimeMs = maxTime,
@@ -57,6 +77,7 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
             NumShadowRays = 1,
             GuidingField = guidingField,
             Settings = settings,
+            BaseSeed = 12345,
         })
     };
 }

@@ -9,10 +9,11 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected override void OnPrepareRender() {
             Vector3 lower = scene.Bounds.Min - scene.Bounds.Diagonal * 0.01f;
             Vector3 upper = scene.Bounds.Max + scene.Bounds.Diagonal * 0.01f;
-            probabilityTree = new KullbackLeiblerProbabilityTree(
-                lower, upper, 
-                Settings.TreeSplitMargin
-            );
+            if (probabilityTree == null)
+                probabilityTree = new KullbackLeiblerProbabilityTree(
+                    lower, upper, 
+                    Settings.TreeSplitMargin
+                );
 
             base.OnPrepareRender();
         }
