@@ -5,18 +5,16 @@ using SeeSharp.Integrators;
 namespace GuidedPathTracerExperiments;
 
 public class ComparisonExperiment : SeeSharp.Experiments.Experiment {
-    int numSamples = 128;
-    int maxTime = int.MaxValue;
-    IntegratorSettings settings = new() {
+    readonly int numSamples = 128;
+    readonly IntegratorSettings settings = new() {
         IncludeDebugVisualizations = true,
         LearnInterval = 1,
         TreeSplitMargin = 2000,
     };
 
 
-    public Experiment(int numSamples, int maxTime = int.MaxValue) {
+    public ComparisonExperiment(int numSamples) {
         this.numSamples = numSamples;
-        this.maxTime = maxTime;
     }
 
     public override List<Method> MakeMethods() => new() {

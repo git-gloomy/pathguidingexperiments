@@ -54,7 +54,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         }
 
         protected override void RenderPixel(uint row, uint col, RNG rng) {
-        // Sample a ray from the camera
+            // Sample a ray from the camera
             var offset = rng.NextFloat2D();
             var pixel = new Vector2(col, row) + offset;
             Ray primaryRay = scene.Camera.GenerateRay(pixel, rng).Ray;

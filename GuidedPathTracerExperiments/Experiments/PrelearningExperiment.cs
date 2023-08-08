@@ -7,12 +7,13 @@ using SeeSharp.Integrators;
 namespace GuidedPathTracerExperiments;
 
 public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
-    int renderSamples = 50;
-    int learningSamples = 25;
-    int maxTime = int.MaxValue;
+    readonly int renderSamples = 50;
+    readonly int learningSamples = 25;
+    readonly int maxTime = int.MaxValue;
+    
     Field guidingField;
-    IntegratorSettings settingsLearningEnabled;
-    IntegratorSettings settingsLearningDisabled;
+    readonly IntegratorSettings settingsLearningEnabled;
+    readonly IntegratorSettings settingsLearningDisabled;
 
     public PrelearningExperiment(int learningSamples, int renderSamples, int maxTime = int.MaxValue) {
         this.learningSamples = learningSamples;
