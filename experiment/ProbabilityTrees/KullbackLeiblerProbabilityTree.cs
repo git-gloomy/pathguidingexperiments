@@ -37,7 +37,6 @@ public class KullbackLeiblerProbabilityTree : GuidingProbabilityTree {
 
         lock (this)
         {
-            //this.avgColor = this.avgColor * (1.0f - (1.0f / sampleCount)) + radianceEstimate * (1.0f / sampleCount);
             if (sampleCount > splitMargin) {
                 Vector3 lower, upper;
                 for (int idx = 0; idx < 8; idx++) {

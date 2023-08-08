@@ -84,12 +84,8 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
             if (samples.Count == 0) return;
             float[] secondMoments = new float[strategies.Length];
             float bsdfProbability = 1.0f - guidingProbability;
-            //avgColor = new(0.0f);
-
     
             foreach (var sample in samples) {
-                //avgColor += sample.RadianceEstimate;
-
                 float estimate = sample.RadianceEstimate.Average;
                 if (estimate == 0.0f || sample.GuidePdf == 0.0f) continue;
 
@@ -111,7 +107,7 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
                     secondMoments[i] += estimateGuide * estimateGuide * correction;
                 }
             }
-            //avgColor /= count;
+            
             int selectedStrategy = 0;
             float minimumSecondMoment = float.PositiveInfinity;
             for (int i = 0; i < strategies.Length; i++) {

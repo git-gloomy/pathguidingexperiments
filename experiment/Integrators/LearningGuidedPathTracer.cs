@@ -33,13 +33,14 @@ namespace GuidedPathTracerExperiments.Integrators {
         public Field GuidingField;
         public bool GuidingEnabled { get; protected set; }
 
+        // Layers for debug renderings
         protected List<SingleIterationLayer> iterationRenderings = new();
         protected List<SingleIterationLayer> iterationCacheVisualizations = new();
-
-        //protected List<SingleIterationLayer> incidentRadianceVisualizations = new();
         protected List<SingleIterationLayer> guidingProbabilityVisualizations = new();
 
+        // Used internally to determine whether samples should be splat into the probability tree
         protected bool enableProbabilityLearning = true;
+        // Used internally to determine whether to use the initial guiding probability or take it from the probability tree
         protected bool useLearnedProbabilities = false;
 
         public override void RegisterSample(Pixel pixel, RgbColor weight, float misWeight, uint depth,
@@ -105,13 +106,14 @@ namespace GuidedPathTracerExperiments.Integrators {
 
             
             if (Settings.IncludeDebugVisualizations) {
-                for (int i = Settings.debugVisualizationInterval; i < TotalSpp; i += Settings.debugVisualizationInterval) {
-                    //incidentRadianceVisualizations.Add(new());
+                for (int i = Settings.DebugVisualizationInterval; i < TotalSpp; i += Settings.DebugVisualizationInterval) {
                     guidingProbabilityVisualizations.Add(new());
-                    //scene.FrameBuffer.AddLayer($"learnedRadiance{i:0000}", incidentRadianceVisualizations[^1]);
                     scene.FrameBuffer.AddLayer($"guidingProbability{i:0000}", guidingProbabilityVisualizations[^1]);
                 }
             }
+
+            if (0 >= Settings.LearnUntil) enableProbabilityLearning = false;
+            if (0 >= Settings.FixProbabilityUntil) useLearnedProbabilities = true;
 
             base.OnPrepareRender();
         }
@@ -177,7 +179,7 @@ namespace GuidedPathTracerExperiments.Integrators {
 
             int curIteration = scene.FrameBuffer.CurIteration - 1;
             if (Settings.IncludeDebugVisualizations && state.Depth == 1) {
-                int iterationsSinceUpdate = curIteration % Settings.debugVisualizationInterval;
+                int iterationsSinceUpdate = curIteration % Settings.DebugVisualizationInterval;
                 if(iterationsSinceUpdate == 0 && curIteration != 0) {
                     float p = probabilityTree.GetProbability(hit.Position);
                     RgbColor probabilityColor = new(
@@ -185,12 +187,8 @@ namespace GuidedPathTracerExperiments.Integrators {
                         hit ? 0.5f - float.Abs(p - 0.5f) : 0, 
                         hit ? 1.0f - p : 0
                     );
-                    guidingProbabilityVisualizations[(int) (curIteration / Settings.debugVisualizationInterval) - 1]
+                    guidingProbabilityVisualizations[(int) (curIteration / Settings.DebugVisualizationInterval) - 1]
                         .Splat(state.Pixel.Col, state.Pixel.Row, probabilityColor);
-
-                    //RgbColor incidentRadiance = probabilityTree.GetAvgColor(hit.Position);
-                    //incidentRadianceVisualizations[(int) (curIteration / debugVisualizationInterval) - 1]
-                    //    .Splat(state.Pixel.Col, state.Pixel.Row, incidentRadiance);
                 }                
             }
         }
@@ -199,7 +197,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             float roughness = hit.Material.GetRoughness(hit);
             if (roughness < 0.1f) return 0;
             if (hit.Material.IsTransmissive(hit)) return 0;
-            if (!useLearnedProbabilities) return Settings.FixedProbability;
+            if (!useLearnedProbabilities) return Settings.InitialGuidingProbability;
             return probabilityTree.GetProbability(hit.Position);
         }
 
@@ -355,8 +353,6 @@ namespace GuidedPathTracerExperiments.Integrators {
                 return; // The path never hit anything.
             }
 
-            // Generate the samples and add them to the global cache
-            // TODO provide sampler (with more efficient wrapper)
             SamplerWrapper sampler = new(null, null);
             uint num = pathSegmentStorage.Value.PrepareSamples(
                 sampler: sampler,
@@ -365,7 +361,7 @@ namespace GuidedPathTracerExperiments.Integrators {
                 guideDirectLight: false,
                 rrAffectsDirectContribution: true);
             
-            if (Settings.EnableGuidingFieldLearning) 
+            if (Settings.GuidingFieldLearningEnabled) 
                 sampleStorage.AddSamples(pathSegmentStorage.Value.SamplesRawPointer, num);
 
             if (enableProbabilityLearning) probPathSegmentStorage.Value.EvaluatePath(probabilityTree);

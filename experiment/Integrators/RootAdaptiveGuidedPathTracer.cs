@@ -24,17 +24,6 @@ namespace GuidedPathTracerExperiments.Integrators {
             base.OnPrepareRender();
         }
 
-        protected override void OnPreIteration(uint iterIdx)
-        {
-            int iterationsSinceUpdate = ((int) iterIdx + 1) % Settings.LearnInterval;
-            if(iterationsSinceUpdate == 0 || !Settings.SingleIterationLearning) {
-                enableProbabilityLearning = true;
-            } else {
-                enableProbabilityLearning = false;
-            }
-            base.OnPreIteration(iterIdx);
-        }
-
         protected override void OnPostIteration(uint iterIdx) {
             // Update mixture ratio every ProbabilityLearningInterval iterations
             int iterationsSinceUpdate = ((int) iterIdx + 1) % Settings.LearnInterval;

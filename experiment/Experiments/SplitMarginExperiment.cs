@@ -25,15 +25,15 @@ public class SplitMarginExperiment : SeeSharp.Experiments.Experiment {
                 TreeSplitMargin = margin
             };
             
-            methods.Add(new Method("RootAdaptive" + margin, new RootAdaptiveGuidedPathTracer() {
+            methods.Add(new Method("SplitMargin/RootAdaptive" + margin, new RootAdaptiveGuidedPathTracer() {
                 TotalSpp = numSamples,
                 Settings = settings
             }));
-            methods.Add(new Method("KullbackLeibler" + margin, new KullbackLeiblerGuidedPathTracer() {
+            methods.Add(new Method("SplitMargin/KullbackLeibler" + margin, new KullbackLeiblerGuidedPathTracer() {
                 TotalSpp = numSamples,
                 Settings = settings
             }));
-            methods.Add(new Method("SecondMoment" + margin, new SecondMomentGuidedPathTracer() {
+            methods.Add(new Method("SplitMargin/SecondMoment" + margin, new SecondMomentGuidedPathTracer() {
                 TotalSpp = numSamples,
                 Settings = settings
             }));

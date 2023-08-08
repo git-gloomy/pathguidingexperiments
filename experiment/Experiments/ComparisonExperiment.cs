@@ -4,8 +4,8 @@ using SeeSharp.Integrators;
 
 namespace GuidedPathTracerExperiments;
 
-public class Experiment : SeeSharp.Experiments.Experiment {
-    int numSamples = 16;
+public class ComparisonExperiment : SeeSharp.Experiments.Experiment {
+    int numSamples = 128;
     int maxTime = int.MaxValue;
     IntegratorSettings settings = new() {
         IncludeDebugVisualizations = true,
@@ -20,21 +20,21 @@ public class Experiment : SeeSharp.Experiments.Experiment {
     }
 
     public override List<Method> MakeMethods() => new() {
-        //new("PathTracer", new PathTracer() {
-        //    TotalSpp = numSamples,
-        //}),
-        //new("GuidedPathTracer", new GuidedPathTracer() {
-        //    TotalSpp = numSamples,
-        //}),
-        new("RootAdaptiveGuidedPathTracer", new RootAdaptiveGuidedPathTracer() {
+        new("Comparison/PathTracer", new PathTracer() {
+            TotalSpp = numSamples,
+        }),
+        new("Comparison/GuidedPathTracer", new GuidedPathTracer() {
+            TotalSpp = numSamples,
+        }),
+        new("Comparison/RootAdaptiveGuidedPathTracer", new RootAdaptiveGuidedPathTracer() {
             TotalSpp = numSamples,
             Settings = settings,
         }),
-        new("KullbackLeiblerGuidedPathTracer", new KullbackLeiblerGuidedPathTracer() {
+        new("Comparison/KullbackLeiblerGuidedPathTracer", new KullbackLeiblerGuidedPathTracer() {
             TotalSpp = numSamples,
             Settings = settings,
         }),
-        new("SecondMomentGuidedPathTracer", new SecondMomentGuidedPathTracer() {
+        new("Comparison/SecondMomentGuidedPathTracer", new SecondMomentGuidedPathTracer() {
             TotalSpp = numSamples,
             Settings = settings,
         })

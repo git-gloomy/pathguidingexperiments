@@ -54,12 +54,6 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
         float secondDeriv = firstDeriv * diff;
         firstDeriv /= samplePdfCube;
         secondDeriv /= samplePdfCube * samplePdf;
-
-        //float firstDeriv = estimateSquared * diff;
-        //firstDeriv /= MathF.Pow(samplePdf, 3.0f);
-        //
-        //float secondDeriv = estimateSquared * MathF.Pow(diff, 2.0f);
-        //secondDeriv /= MathF.Pow(samplePdf, 4.0f);
         
         AddSampleData(new RootAdaptiveSampleData() {
             Position = position,
@@ -106,16 +100,13 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
             float secondDeriv = 0.0f;
             
             float div = (1.0f / (float) samples.Count);
-            //avgColor = new(0.0f);
             foreach (var sample in samples) {
                 firstDeriv += sample.FirstDeriv;
                 secondDeriv += sample.SecondDeriv;
-                //avgColor += sample.RadianceEstimate;
             }            
             
             firstDeriv *= div;
             secondDeriv *= div;
-            //avgColor *= div;
             
             if(!(secondDeriv == 0 || float.IsNaN(firstDeriv) || float.IsNaN(secondDeriv))) {
                 guidingProbability = float.Clamp(guidingProbability - (firstDeriv / secondDeriv), 0.1f, 0.9f);

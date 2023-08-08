@@ -8,12 +8,22 @@ namespace GuidedPathTracerExperiments.Integrators {
         public bool WriteIterationsAsLayers = false;
 
         /// <summary>
+        /// Enables/disables splatting of sample data into the guiding field.
+        /// </summary>
+        public bool GuidingFieldLearningEnabled = true;
+        
+
+
+        /// <summary>
         /// If set to true, the probabilities and incident radiance stored in the probabilityTree
         /// will be rendered as layers in the .exr.
         /// </summary>
         public bool IncludeDebugVisualizations = false;
         
-        public int debugVisualizationInterval = 32;
+        /// <summary>
+        /// Determines how often the debug visualization of the guiding probabilities is rendered
+        /// </summary>
+        public int DebugVisualizationInterval = 32;
 
         /// <summary>
         /// Determines how many samples have to be gathered in a leaf of the probabilityTree before
@@ -21,23 +31,49 @@ namespace GuidedPathTracerExperiments.Integrators {
         /// </summary>
         public int TreeSplitMargin = 10000;
 
+        /// <summary>
+        /// Probability used to initialize the probability tree. It is also used as a fixed
+        /// guiding probability if the iteration count is less than <see cref="FixProbabilityUntil"/>.
+        /// </summary>
         public float InitialGuidingProbability = 0.5f;
+        
 
-        // The following 3 parameters are used in PrelearningExperiment
-        public bool EnableGuidingFieldLearning = true;
-        public int FixProbabilityUntil = -1;
+
+        /// <summary>
+        /// After <see cref="LearnUntil"/> iterations, no further sample data is splatted into the
+        /// guiding probability tree.
+        /// </summary>
         public int LearnUntil = int.MaxValue;
 
         /// <summary>
-        /// Determines after how many iterations the guiding probabilities are reevaluated
+        /// Each <see cref="LearnInterval"/> iterations, the guiding probabilities are reevaluated
+        /// (if learning is enabled). Only used by <see cref="RootAdaptiveGuidedPathTracer"/> and
+        /// <see cref="SecondMomentGuidedPathTracer"/>.
         /// </summary>
-        public int LearnInterval = 1;
+        public int LearnInterval = 32;
+        
+        /// <summary>
+        /// The integrator uses the <see cref="InitialGuidingProbability"/> until <see
+        /// cref="FixProbabilityUntil"/> iterations have passed.
+        /// </summary>
+        public int FixProbabilityUntil = -1;
+        
+
+
+        public IntegratorSettings() {}
 
         /// <summary>
-        /// If true, discards all samples for learning except the ones in the learning iteration
+        /// Returns a new instances that clones the properties of <paramref name="settings"/>
         /// </summary>
-        public bool SingleIterationLearning = false;
-
-        public float FixedProbability = 0.5f;
+        public IntegratorSettings(IntegratorSettings settings) {
+            WriteIterationsAsLayers = settings.WriteIterationsAsLayers;
+            IncludeDebugVisualizations = settings.IncludeDebugVisualizations;
+            DebugVisualizationInterval = settings.DebugVisualizationInterval;
+            TreeSplitMargin = settings.TreeSplitMargin;
+            InitialGuidingProbability = settings.InitialGuidingProbability;
+            GuidingFieldLearningEnabled = settings.GuidingFieldLearningEnabled;
+            LearnUntil = settings.LearnUntil;
+            FixProbabilityUntil = settings.FixProbabilityUntil;
+        }
     }
 }
