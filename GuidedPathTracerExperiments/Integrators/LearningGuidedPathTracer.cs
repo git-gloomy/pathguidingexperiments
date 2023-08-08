@@ -29,7 +29,8 @@ namespace GuidedPathTracerExperiments.Integrators {
 
         public SpatialSettings SpatialSettings = new KdTreeSettings() { KnnLookup = true };
 
-        public IntegratorSettings Settings = new IntegratorSettings();
+        public IntegratorSettings Settings = new();
+
         public Field GuidingField;
         public bool GuidingEnabled { get; protected set; }
 
@@ -42,18 +43,24 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected bool enableProbabilityLearning = true;
         // Used internally to determine whether to use the initial guiding probability or take it from the probability tree
         protected bool useLearnedProbabilities = false;
+        protected uint iterIdx = 0;
 
         public override void RegisterSample(Pixel pixel, RgbColor weight, float misWeight, uint depth,
                                             bool isNextEvent) {
             base.RegisterSample(pixel, weight, misWeight, depth, isNextEvent);
 
             if (Settings.WriteIterationsAsLayers) {
-                var render = iterationRenderings[scene.FrameBuffer.CurIteration - 1];
+                var render = iterationRenderings[(int) iterIdx];
                 render.Splat(pixel.Row, pixel.Col, weight * misWeight);
             }
         }
 
         protected override void RenderPixel(uint row, uint col, RNG rng) {
+            // The rng seed is usually initialized before calling this method, but we do it here to
+            // be able to include the offset without having to copy the entire logic of the render method
+            uint pixelIndex = (uint)(row * scene.FrameBuffer.Width + col);
+            rng = new(BaseSeed, pixelIndex, iterIdx + Settings.RNGOffset);
+
             // Sample a ray from the camera
             var offset = rng.NextFloat2D();
             var pixel = new Vector2(col, row) + offset;
@@ -121,9 +128,16 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected override void OnAfterRender()
         {
             base.OnAfterRender();
+            // Dereference all memory intensive objects
             probabilityTree = null;
+            GuidingField = null;
+            sampleStorage = null;
         }
         
+        protected override void OnPreIteration(uint iterIdx) {
+            this.iterIdx = iterIdx;
+        }
+
         protected override void OnPostIteration(uint iterIdx) {
             uint nextIdx = iterIdx + 1;
             if (nextIdx >= Settings.LearnUntil) enableProbabilityLearning = false;
@@ -172,22 +186,21 @@ namespace GuidedPathTracerExperiments.Integrators {
                     float saturation = (float)colorRng.NextDouble() * 0.8f + 0.2f;
 
                     var color = RegionVisualizer.HsvToRgb(hue, saturation, 1.0f);
-                    iterationCacheVisualizations[scene.FrameBuffer.CurIteration - 1]
+                    iterationCacheVisualizations[(int) iterIdx]
                         .Splat(state.Pixel.Row, state.Pixel.Col, color);
                 }
             }
 
-            int curIteration = scene.FrameBuffer.CurIteration - 1;
             if (Settings.IncludeDebugVisualizations && state.Depth == 1) {
-                int iterationsSinceUpdate = curIteration % Settings.DebugVisualizationInterval;
-                if(iterationsSinceUpdate == 0 && curIteration != 0) {
+                int iterationsSinceUpdate = (int) iterIdx % Settings.DebugVisualizationInterval;
+                if(iterationsSinceUpdate == 0 && iterIdx != 0) {
                     float p = probabilityTree.GetProbability(hit.Position);
                     RgbColor probabilityColor = new(
                         hit ? p : 0, 
                         hit ? 0.5f - float.Abs(p - 0.5f) : 0, 
                         hit ? 1.0f - p : 0
                     );
-                    guidingProbabilityVisualizations[(int) (curIteration / Settings.DebugVisualizationInterval) - 1]
+                    guidingProbabilityVisualizations[((int) iterIdx / Settings.DebugVisualizationInterval) - 1]
                         .Splat(state.Pixel.Col, state.Pixel.Row, probabilityColor);
                 }                
             }

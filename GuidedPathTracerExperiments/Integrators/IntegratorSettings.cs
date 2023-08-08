@@ -21,7 +21,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         public bool IncludeDebugVisualizations = false;
         
         /// <summary>
-        /// Determines how often the debug visualization of the guiding probabilities is rendered
+        /// Determines how often the debug visualization of the guiding probabilities is rendered.
         /// </summary>
         public int DebugVisualizationInterval = 32;
 
@@ -58,12 +58,16 @@ namespace GuidedPathTracerExperiments.Integrators {
         /// </summary>
         public int FixProbabilityUntil = -1;
         
+        /// <summary>
+        /// Added to the current iteration index before computing the hash used for the RNG.
+        /// </summary>
+        public uint RNGOffset = 0;
 
 
         public IntegratorSettings() {}
 
         /// <summary>
-        /// Returns a new instances that clones the properties of <paramref name="settings"/>
+        /// Returns a new instances that copies the properties of <paramref name="settings"/>.
         /// </summary>
         public IntegratorSettings(IntegratorSettings settings) {
             WriteIterationsAsLayers = settings.WriteIterationsAsLayers;
@@ -74,6 +78,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             GuidingFieldLearningEnabled = settings.GuidingFieldLearningEnabled;
             LearnUntil = settings.LearnUntil;
             FixProbabilityUntil = settings.FixProbabilityUntil;
+            RNGOffset = settings.RNGOffset;
         }
     }
 }

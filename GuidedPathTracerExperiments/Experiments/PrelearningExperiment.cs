@@ -31,6 +31,7 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
         this.settingsLearningDisabled = new(settingsLearningEnabled) { 
             LearnUntil = 0,
             FixProbabilityUntil = renderSamples,
+            RNGOffset = (uint) learningSamples,
         };
     }
 
@@ -48,48 +49,48 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
     }
 
     public override List<Method> MakeMethods() => new() {
-        new Method("Prelearned/PathTracing", new RootAdaptiveGuidedPathTracer() {
+        //new Method("Prelearned/PathTracing", new RootAdaptiveGuidedPathTracer() {
+        //    TotalSpp = renderSamples,
+        //    GuidingField = guidingField,
+        //    Settings = new(settingsLearningDisabled) { 
+        //        InitialGuidingProbability = 0,
+        //    },
+        //}),
+        new Method("Prelearned/PathGuiding01", new RootAdaptiveGuidedPathTracer() {
             TotalSpp = renderSamples,
             GuidingField = guidingField,
             Settings = new(settingsLearningDisabled) { 
-                InitialGuidingProbability = 0,
+                InitialGuidingProbability = 0.1f,
             },
         }),
-        new Method("Prelearned/PathGuiding02", new RootAdaptiveGuidedPathTracer() {
+        //new Method("Prelearned/PathGuiding05", new RootAdaptiveGuidedPathTracer() {
+        //    TotalSpp = renderSamples,
+        //    GuidingField = guidingField,
+        //    Settings = new(settingsLearningDisabled) { 
+        //        InitialGuidingProbability = 0.5f,
+        //    },
+        //}),
+        new Method("Prelearned/PathGuiding09", new RootAdaptiveGuidedPathTracer() {
             TotalSpp = renderSamples,
             GuidingField = guidingField,
             Settings = new(settingsLearningDisabled) { 
-                InitialGuidingProbability = 0.2f,
+                InitialGuidingProbability = 0.9f,
             },
         }),
-        new Method("Prelearned/PathGuiding05", new RootAdaptiveGuidedPathTracer() {
-            TotalSpp = renderSamples,
-            GuidingField = guidingField,
-            Settings = new(settingsLearningDisabled) { 
-                InitialGuidingProbability = 0.5f,
-            },
-        }),
-        new Method("Prelearned/PathGuiding08", new RootAdaptiveGuidedPathTracer() {
-            TotalSpp = renderSamples,
-            GuidingField = guidingField,
-            Settings = new(settingsLearningDisabled) { 
-                InitialGuidingProbability = 0.8f,
-            },
-        }),
-        new Method("Prelearned/RootAdaptive", new RootAdaptiveGuidedPathTracer() {
-            TotalSpp = learningSamples + renderSamples,
-            GuidingField = guidingField,
-            Settings = settingsLearningEnabled,
-        }),
-        new Method("Prelearned/SecondMoment", new SecondMomentGuidedPathTracer() {
-            TotalSpp = learningSamples + renderSamples,
-            GuidingField = guidingField,
-            Settings = settingsLearningEnabled,
-        }),
-        new Method("Prelearned/KullbackLeibler", new KullbackLeiblerGuidedPathTracer() {
-            TotalSpp = learningSamples + renderSamples,
-            GuidingField = guidingField,
-            Settings = settingsLearningEnabled,
-        }),
+        //new Method("Prelearned/RootAdaptive", new RootAdaptiveGuidedPathTracer() {
+        //    TotalSpp = learningSamples + renderSamples,
+        //    GuidingField = guidingField,
+        //    Settings = settingsLearningEnabled,
+        //}),
+        //new Method("Prelearned/SecondMoment", new SecondMomentGuidedPathTracer() {
+        //    TotalSpp = learningSamples + renderSamples,
+        //    GuidingField = guidingField,
+        //    Settings = settingsLearningEnabled,
+        //}),
+        //new Method("Prelearned/KullbackLeibler", new KullbackLeiblerGuidedPathTracer() {
+        //    TotalSpp = learningSamples + renderSamples,
+        //    GuidingField = guidingField,
+        //    Settings = settingsLearningEnabled,
+        //}),
     };
 }
