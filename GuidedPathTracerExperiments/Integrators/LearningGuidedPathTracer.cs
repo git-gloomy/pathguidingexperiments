@@ -43,6 +43,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected bool enableProbabilityLearning = true;
         // Used internally to determine whether to use the initial guiding probability or take it from the probability tree
         protected bool useLearnedProbabilities = false;
+        // 0-based index of the current iteration
         protected uint iterIdx = 0;
 
         public override void RegisterSample(Pixel pixel, RgbColor weight, float misWeight, uint depth,
@@ -81,8 +82,9 @@ namespace GuidedPathTracerExperiments.Integrators {
         }
 
         protected override void OnPrepareRender() {
+            // GuidingField is already initialized if we use a pretrained one
             if(GuidingField == null) {
-                GuidingField = new(new() {
+                GuidingField ??= new(new() {
                     SpatialSettings = SpatialSettings
                 });
                 Vector3 lower = scene.Bounds.Min - scene.Bounds.Diagonal * 0.01f;
@@ -128,7 +130,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected override void OnAfterRender()
         {
             base.OnAfterRender();
-            // Dereference all memory intensive objects
+            // Dereference all objects that can have a large memory footprint
             probabilityTree = null;
             GuidingField = null;
             sampleStorage = null;
@@ -243,13 +245,15 @@ namespace GuidedPathTracerExperiments.Integrators {
             RgbColor contrib;
             if (state.Rng.NextFloat() < selectGuideProb) { // sample guided
                 var sampledDir = distribution.Sample(state.Rng.NextFloat2D());
-                guidePdf = distribution.PDF(sampledDir);           
-                probSegment.GuidePdf = guidePdf;
-                guidePdf *= selectGuideProb; 
+                guidePdf = distribution.PDF(sampledDir);    
+                bsdfPdf = hit.Material.Pdf(hit, outDir, sampledDir, false).Pdf;    
 
-                bsdfPdf = hit.Material.Pdf(hit, outDir, sampledDir, false).Item1;
+                // Save raw PDFs before including guide probability
+                probSegment.GuidePdf = guidePdf;
                 probSegment.BsdfPdf = bsdfPdf;
-                bsdfPdf *= (1 - selectGuideProb);    
+
+                guidePdf *= selectGuideProb; 
+                bsdfPdf *= 1 - selectGuideProb;    
 
                 contrib = hit.Material.EvaluateWithCosine(hit, outDir, sampledDir, false);
                 contrib /= guidePdf + bsdfPdf;
@@ -258,7 +262,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             } else { // Sample the BSDF (default)
                 (nextRay, bsdfPdf, contrib) = base.SampleDirection(ray, hit, state);
                 probSegment.BsdfPdf = bsdfPdf;
-                bsdfPdf *= (1 - selectGuideProb);
+                bsdfPdf *= 1 - selectGuideProb;
                 if(!(MathF.Abs(nextRay.Direction.LengthSquared() - 1.0f) < 0.001f)) return (new(), 0, RgbColor.Black);
 
                 if (bsdfPdf == 0) { // prevent NaNs / Infs
@@ -290,6 +294,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             segment.PDFDirectionIn = pdf;
             segment.ScatteringWeight = contrib;
 
+            // Save properties needed for probability learning
             probSegment.SamplePdf = pdf;
             probSegment.ScatteringWeight = contrib;
             probSegment.BsdfCosine = hit.Material.EvaluateWithCosine(hit, outDir, inDir, false);

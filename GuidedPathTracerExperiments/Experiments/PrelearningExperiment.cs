@@ -49,13 +49,13 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
     }
 
     public override List<Method> MakeMethods() => new() {
-        //new Method("Prelearned/PathTracing", new RootAdaptiveGuidedPathTracer() {
-        //    TotalSpp = renderSamples,
-        //    GuidingField = guidingField,
-        //    Settings = new(settingsLearningDisabled) { 
-        //        InitialGuidingProbability = 0,
-        //    },
-        //}),
+        new Method("Prelearned/PathTracing", new RootAdaptiveGuidedPathTracer() {
+            TotalSpp = renderSamples,
+            GuidingField = guidingField,
+            Settings = new(settingsLearningDisabled) { 
+                InitialGuidingProbability = 0,
+            },
+        }),
         new Method("Prelearned/PathGuiding01", new RootAdaptiveGuidedPathTracer() {
             TotalSpp = renderSamples,
             GuidingField = guidingField,
@@ -63,13 +63,13 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
                 InitialGuidingProbability = 0.1f,
             },
         }),
-        //new Method("Prelearned/PathGuiding05", new RootAdaptiveGuidedPathTracer() {
-        //    TotalSpp = renderSamples,
-        //    GuidingField = guidingField,
-        //    Settings = new(settingsLearningDisabled) { 
-        //        InitialGuidingProbability = 0.5f,
-        //    },
-        //}),
+        new Method("Prelearned/PathGuiding05", new RootAdaptiveGuidedPathTracer() {
+            TotalSpp = renderSamples,
+            GuidingField = guidingField,
+            Settings = new(settingsLearningDisabled) { 
+                InitialGuidingProbability = 0.5f,
+            },
+        }),
         new Method("Prelearned/PathGuiding09", new RootAdaptiveGuidedPathTracer() {
             TotalSpp = renderSamples,
             GuidingField = guidingField,
@@ -77,20 +77,20 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
                 InitialGuidingProbability = 0.9f,
             },
         }),
-        //new Method("Prelearned/RootAdaptive", new RootAdaptiveGuidedPathTracer() {
-        //    TotalSpp = learningSamples + renderSamples,
-        //    GuidingField = guidingField,
-        //    Settings = settingsLearningEnabled,
-        //}),
-        //new Method("Prelearned/SecondMoment", new SecondMomentGuidedPathTracer() {
-        //    TotalSpp = learningSamples + renderSamples,
-        //    GuidingField = guidingField,
-        //    Settings = settingsLearningEnabled,
-        //}),
-        //new Method("Prelearned/KullbackLeibler", new KullbackLeiblerGuidedPathTracer() {
-        //    TotalSpp = learningSamples + renderSamples,
-        //    GuidingField = guidingField,
-        //    Settings = settingsLearningEnabled,
-        //}),
+        new Method("Prelearned/RootAdaptive", new RootAdaptiveGuidedPathTracer() {
+            TotalSpp = learningSamples + renderSamples,
+            GuidingField = guidingField,
+            Settings = settingsLearningEnabled,
+        }),
+        new Method("Prelearned/SecondMoment", new SecondMomentGuidedPathTracer() {
+            TotalSpp = learningSamples + renderSamples,
+            GuidingField = guidingField,
+            Settings = settingsLearningEnabled,
+        }),
+        new Method("Prelearned/KullbackLeibler", new KullbackLeiblerGuidedPathTracer() {
+            TotalSpp = learningSamples + renderSamples,
+            GuidingField = guidingField,
+            Settings = settingsLearningEnabled,
+        }),
     };
 }

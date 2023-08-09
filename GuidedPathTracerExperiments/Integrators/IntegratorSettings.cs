@@ -29,7 +29,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         /// Determines how many samples have to be gathered in a leaf of the probabilityTree before
         /// it is split up.
         /// </summary>
-        public int TreeSplitMargin = 10000;
+        public int TreeSplitMargin = 20000;
 
         /// <summary>
         /// Probability used to initialize the probability tree. It is also used as a fixed

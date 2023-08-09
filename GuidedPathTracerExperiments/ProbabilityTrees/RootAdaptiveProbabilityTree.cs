@@ -6,6 +6,7 @@ using SimpleImageIO;
 
 namespace GuidedPathTracerExperiments.ProbabilityTrees;
 
+// Based on Optimal Deterministic Mixture Sampling by Sbert et al. (see: https://diglib.eg.org/handle/10.2312/egs20191018)
 public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
     class RootAdaptiveSampleData {
         public Vector3 Position { get; set; }
@@ -28,7 +29,7 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
                 samples.Add(sample);
             }
         } else {
-            ((RootAdaptiveProbabilityTree) childNodes[getChildIdx(sample.Position)])
+            ((RootAdaptiveProbabilityTree) childNodes[GetChildIdx(sample.Position)])
                 .AddSampleData(sample);
         }
     }
@@ -46,6 +47,7 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
             return;
         }
 
+        // We compute the first and second derivatives of the variance and store them for later use
         float estimateSquared = estimate * estimate;
         float diff = bsdfPdf - guidePdf;
         float samplePdfCube = MathF.Pow(samplePdf, 3.0f);
@@ -65,24 +67,24 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
 
     public override float GetProbability(Vector3 point) {
         if(isLeaf) return guidingProbability;
-        else return childNodes[getChildIdx(point)].GetProbability(point);
+        else return childNodes[GetChildIdx(point)].GetProbability(point);
     }
 
     public void LearnProbabilities() {
-        if (isLeaf && samples.Count > splitMargin) {
+        if (isLeaf && samples.Count > SplitMargin) {
             Vector3 lower, upper;
             for (int idx = 0; idx < 8; idx++) {
                 (lower, upper) = GetChildBoundingBox(idx);    
                 childNodes[idx] = new RootAdaptiveProbabilityTree(
                     guidingProbability, 
                     lower, upper, 
-                    splitMargin,
+                    SplitMargin,
                     samples.Count / 8);
             } 
 
             // Distribute data to the correct child nodes
             foreach (var sample in samples) {
-                int idx = getChildIdx(sample.Position);
+                int idx = GetChildIdx(sample.Position);
                 ((RootAdaptiveProbabilityTree) childNodes[idx]).AddSampleData(sample);
             }
 
@@ -96,10 +98,11 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
                 ((RootAdaptiveProbabilityTree) childNodes[idx]).LearnProbabilities();
             });
         } else {
+            // Minimizes the variance by using a Newton algorithm
             float firstDeriv = 0.0f;
             float secondDeriv = 0.0f;
             
-            float div = (1.0f / (float) samples.Count);
+            float div = 1.0f / samples.Count;
             foreach (var sample in samples) {
                 firstDeriv += sample.FirstDeriv;
                 secondDeriv += sample.SecondDeriv;
@@ -109,6 +112,7 @@ public class RootAdaptiveProbabilityTree : GuidingProbabilityTree {
             secondDeriv *= div;
             
             if(!(secondDeriv == 0 || float.IsNaN(firstDeriv) || float.IsNaN(secondDeriv))) {
+                // As suggested by the paper, we clamp the probability between 0.1 and 0.9
                 guidingProbability = float.Clamp(guidingProbability - (firstDeriv / secondDeriv), 0.1f, 0.9f);
             }
             samples.Clear();

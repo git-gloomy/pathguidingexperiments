@@ -4,8 +4,15 @@ using SimpleImageIO;
 namespace GuidedPathTracerExperiments.ProbabilityTrees;
 
 public abstract class GuidingProbabilityTree {
-    protected int splitMargin { get; set; }
+    /// <summary>
+    /// If more than <see cref="SplitMargin"/> samples are splatted into a leaf, it is split into 8 child nodes
+    /// </summary>
+    protected int SplitMargin { get; set; }
+    /// <summary>
+    /// Contains references to all child nodes of the current node
+    /// </summary>
     protected GuidingProbabilityTree[] childNodes = new GuidingProbabilityTree[8];
+
     protected Vector3 splitCoordinates, lowerBounds, upperBounds;
     protected bool isLeaf = true;
 
@@ -13,14 +20,23 @@ public abstract class GuidingProbabilityTree {
         this.lowerBounds = lowerBounds;
         this.upperBounds = upperBounds;
         this.splitCoordinates = lowerBounds + 0.5f * (upperBounds - lowerBounds);
-        this.splitMargin = splitMargin;
+        this.SplitMargin = splitMargin;
     }
 
+    /// <summary>
+    /// Traverses the tree and returns the guiding probability associated with the given <paramref name="point"/>.
+    /// </summary>
     public abstract float GetProbability(Vector3 point);
 
+    /// <summary>
+    /// Traverses the tree and adds the given data to a leaf node, which processes or stores it for learning.
+    /// </summary>
     public abstract void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate);
 
-    protected int getChildIdx(Vector3 point) {
+    /// <summary>
+    /// Gets the index of the child node corresponding to the <paramref name="point"/> in <see cref="childNodes"/>.
+    /// </summary>
+    protected int GetChildIdx(Vector3 point) {
         if (point.X > splitCoordinates.X) {
             if (point.Y > splitCoordinates.Y) {
                 if (point.Z > splitCoordinates.Z) return 7;
@@ -40,6 +56,9 @@ public abstract class GuidingProbabilityTree {
         }
     }
 
+    /// <summary>
+    /// Computes the bounding box of a child node from the bounding box of its parent node.
+    /// </summary>
     protected (Vector3, Vector3) GetChildBoundingBox(int childIdx) {
         Vector3 lower = new(
             childIdx < 4 ? this.lowerBounds.X : splitCoordinates.X,

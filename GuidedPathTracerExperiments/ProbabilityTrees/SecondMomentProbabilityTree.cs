@@ -6,6 +6,8 @@ using SimpleImageIO;
 
 namespace GuidedPathTracerExperiments.ProbabilityTrees;
 
+// Based on Efficiency-aware multiple importance sampling for bidirectional rendering algorithms
+// by Grittmann et al. (see: https://dl.acm.org/doi/abs/10.1145/3528223.3530126)
 public class SecondMomentProbabilityTree : GuidingProbabilityTree {
     class SecondMomentSampleData {
         public Vector3 Position { get; set; }
@@ -15,7 +17,10 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
         public RgbColor RadianceEstimate { get; set; }
     }
 
-    static float[] strategies = {.1f, .2f, .3f, .4f, .5f, .6f, .7f, .8f, .9f};
+    /// <summary>
+    /// Possible values of the guiding probability to consider during learning
+    /// </summary>
+    static readonly float[] strategies = {.1f, .2f, .3f, .4f, .5f, .6f, .7f, .8f, .9f};
 
     float guidingProbability;
     List<SecondMomentSampleData> samples;
@@ -32,7 +37,7 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
                 samples.Add(sample);
             }
         } else {
-            ((SecondMomentProbabilityTree) childNodes[getChildIdx(sample.Position)])
+            ((SecondMomentProbabilityTree) childNodes[GetChildIdx(sample.Position)])
                 .AddSampleData(sample);
         }
     }
@@ -49,24 +54,24 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
 
     public override float GetProbability(Vector3 point) {
         if(isLeaf) return guidingProbability;
-        else return childNodes[getChildIdx(point)].GetProbability(point);
+        else return childNodes[GetChildIdx(point)].GetProbability(point);
     }
 
     public void LearnProbabilities() {
-        if (isLeaf && samples.Count > splitMargin) {
+        if (isLeaf && samples.Count > SplitMargin) {
             Vector3 lower, upper;
             for (int idx = 0; idx < 8; idx++) {
                 (lower, upper) = GetChildBoundingBox(idx);    
                 childNodes[idx] = new SecondMomentProbabilityTree(
                     guidingProbability, 
                     lower, upper, 
-                    splitMargin,
+                    SplitMargin,
                     samples.Count / 8);
             } 
 
             // Distribute data to the correct child nodes
             foreach (var sample in samples) {
-                int idx = getChildIdx(sample.Position);
+                int idx = GetChildIdx(sample.Position);
                 ((SecondMomentProbabilityTree) childNodes[idx]).AddSampleData(sample);
             }
 
@@ -80,6 +85,8 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
                 ((SecondMomentProbabilityTree) childNodes[idx]).LearnProbabilities();
             });
         } else {
+            // Implementation of Algorithm 1 from the paper
+            // Some computations are reordered to allow reusage of interim results
             float count = samples.Count;
             if (samples.Count == 0) return;
             float[] secondMoments = new float[strategies.Length];
@@ -89,25 +96,29 @@ public class SecondMomentProbabilityTree : GuidingProbabilityTree {
                 float estimate = sample.RadianceEstimate.Average;
                 if (estimate == 0.0f || sample.GuidePdf == 0.0f) continue;
 
-                float combinedPdfs = (sample.GuidePdf * 0.5f + sample.BsdfPdf * 0.5f);
+                // We use a guiding probability of 0.5 as our proxy
+                float combinedPdfs = sample.GuidePdf * 0.5f + sample.BsdfPdf * 0.5f;
                 float weightProxyBsdf = 0.5f * sample.BsdfPdf / combinedPdfs;
                 float weightProxyGuide = 0.5f * sample.GuidePdf / combinedPdfs;
 
-                float correctionNum = bsdfProbability * weightProxyBsdf + guidingProbability * weightProxyGuide;
+                float correctionNumerator = bsdfProbability * weightProxyBsdf + guidingProbability * weightProxyGuide;
 
+                // Balance heuristic for both methods
                 float balanceBsdf = bsdfProbability * sample.BsdfPdf / sample.SamplePdf;
                 float balanceGuide = guidingProbability * sample.GuidePdf / sample.SamplePdf;
 
+                // Resulting estimates when using either BSDF sampling vs. path guiding
                 float estimateBsdf = balanceBsdf * estimate / (count * sample.BsdfPdf);
                 float estimateGuide = balanceGuide * estimate / (count * sample.GuidePdf);
 
                 for (int i = 0; i < strategies.Length; i++) {
-                    float correction = correctionNum / ((1.0f - strategies[i]) * weightProxyBsdf + strategies[i] * weightProxyGuide);
+                    float correction = correctionNumerator / ((1.0f - strategies[i]) * weightProxyBsdf + strategies[i] * weightProxyGuide);
                     secondMoments[i] += estimateBsdf * estimateBsdf * correction;
                     secondMoments[i] += estimateGuide * estimateGuide * correction;
                 }
             }
             
+            // Select the guiding probability that minimizes the second moment
             int selectedStrategy = 0;
             float minimumSecondMoment = float.PositiveInfinity;
             for (int i = 0; i < strategies.Length; i++) {

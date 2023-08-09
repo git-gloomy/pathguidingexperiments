@@ -5,11 +5,9 @@ namespace GuidedPathTracerExperiments;
 
 public class SplitMarginExperiment : SeeSharp.Experiments.Experiment {
     int numSamples = 16;
-    int maxTime = int.MaxValue;
 
-    public SplitMarginExperiment(int numSamples, int maxTime = int.MaxValue) {
+    public SplitMarginExperiment(int numSamples) {
         this.numSamples = numSamples;
-        this.maxTime = maxTime;
     }
 
     public override List<Method> MakeMethods() {

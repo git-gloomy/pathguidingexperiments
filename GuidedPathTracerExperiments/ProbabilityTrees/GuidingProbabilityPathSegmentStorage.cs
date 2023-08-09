@@ -36,6 +36,8 @@ namespace GuidedPathTracerExperiments.ProbabilityTrees {
         }
 
         public void EvaluatePath(GuidingProbabilityTree tree) {
+            // The following way of computing the contribution of individual path segments is a
+            // simplified version of the logic used by OpenPGL's PathSegmentStorage
             for (int i = idx - 2; i >= 0; i--) {
                 var segment = segments[i];
 
@@ -54,6 +56,8 @@ namespace GuidedPathTracerExperiments.ProbabilityTrees {
                         throughput *= nextSegment.ScatteringWeight;
                     }
                     
+                    // We add sample data to the tree even if there is no contribution and let the
+                    // tree handle that case
                     tree.AddSampleData(
                         segment.Position, 
                         segment.GuidePdf,
