@@ -62,7 +62,7 @@ public abstract class AccumulatingTree : GuidingProbabilityTree {
     protected abstract void LearnProbability();
 
     public void LearnProbabilities() {
-        if (isLeaf && samples.Count > SplitMargin) {
+        if (isLeaf && samples.Count > splitMargin) {
             // Has to rely on the constructor of the child class
             InitializeChildren();
 

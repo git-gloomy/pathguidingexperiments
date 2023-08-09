@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Numerics;
-using System.Threading.Tasks;
-using SimpleImageIO;
 
 namespace GuidedPathTracerExperiments.ProbabilityTrees;
 
@@ -21,7 +18,7 @@ public class RootAdaptiveTree : AccumulatingTree {
             childNodes[idx] = new RootAdaptiveTree(
                 guidingProbability, 
                 lower, upper, 
-                SplitMargin,
+                splitMargin,
                 samples.Count / 8);
         } 
     }

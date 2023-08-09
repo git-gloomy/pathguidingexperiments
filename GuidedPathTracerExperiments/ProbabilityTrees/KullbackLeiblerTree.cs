@@ -40,14 +40,14 @@ public class KullbackLeiblerTree : GuidingProbabilityTree {
 
         lock (this)
         {
-            if (sampleCount > SplitMargin) {
+            if (sampleCount > splitMargin) {
                 Vector3 lower, upper;
                 for (int idx = 0; idx < 8; idx++) {
                     (lower, upper) = GetChildBoundingBox(idx);    
 
                     childNodes[idx] = new KullbackLeiblerTree(
                         lower, upper, 
-                        SplitMargin,
+                        splitMargin,
                         t, m, v, theta);
                 } 
 

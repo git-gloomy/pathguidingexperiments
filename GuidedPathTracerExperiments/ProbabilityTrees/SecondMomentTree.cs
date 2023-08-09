@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Numerics;
-using System.Threading.Tasks;
-using SimpleImageIO;
 
 namespace GuidedPathTracerExperiments.ProbabilityTrees;
 
@@ -26,7 +22,7 @@ public class SecondMomentTree : AccumulatingTree {
             childNodes[idx] = new SecondMomentTree(
                 guidingProbability, 
                 lower, upper, 
-                SplitMargin,
+                splitMargin,
                 samples.Count / 8);
         } 
     }

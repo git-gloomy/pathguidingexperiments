@@ -5,9 +5,9 @@ namespace GuidedPathTracerExperiments.ProbabilityTrees;
 
 public abstract class GuidingProbabilityTree {
     /// <summary>
-    /// If more than <see cref="SplitMargin"/> samples are splatted into a leaf, it is split into 8 child nodes
+    /// If more than <see cref="splitMargin"/> samples are splatted into a leaf, it is split into 8 child nodes
     /// </summary>
-    protected int SplitMargin { get; set; }
+    protected int splitMargin;
     /// <summary>
     /// Contains references to all child nodes of the current node
     /// </summary>
@@ -20,7 +20,7 @@ public abstract class GuidingProbabilityTree {
         this.lowerBounds = lowerBounds;
         this.upperBounds = upperBounds;
         this.splitCoordinates = lowerBounds + 0.5f * (upperBounds - lowerBounds);
-        this.SplitMargin = splitMargin;
+        this.splitMargin = splitMargin;
     }
 
     /// <summary>
@@ -57,7 +57,7 @@ public abstract class GuidingProbabilityTree {
     }
 
     /// <summary>
-    /// Computes the bounding box of a child node from the bounding box of its parent node.
+    /// Computes the bounding box of a child node from its ID and the bounding box of its parent node.
     /// </summary>
     protected (Vector3, Vector3) GetChildBoundingBox(int childIdx) {
         Vector3 lower = new(

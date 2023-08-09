@@ -1,9 +1,5 @@
 using System.Numerics;
-using SimpleImageIO;
-using TinyEmbree;
 using GuidedPathTracerExperiments.ProbabilityTrees;
-using SeeSharp.Sampling;
-using OpenPGL.NET;
 
 namespace GuidedPathTracerExperiments.Integrators {
 
