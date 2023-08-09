@@ -13,7 +13,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             Vector3 lower = scene.Bounds.Min - scene.Bounds.Diagonal * 0.01f;
             Vector3 upper = scene.Bounds.Max + scene.Bounds.Diagonal * 0.01f;
             
-            probabilityTree ??= new SecondMomentProbabilityTree(
+            probabilityTree ??= new SecondMomentTree(
                 Settings.InitialGuidingProbability, 
                 lower, upper, 
                 Settings.TreeSplitMargin,
@@ -27,7 +27,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             // Update guiding probability tree every ProbabilityLearningInterval iterations
             int iterationsSinceUpdate = ((int) iterIdx + 1) % Settings.LearnInterval;
             if(iterationsSinceUpdate == 0 && iterIdx + 1 != TotalSpp && enableProbabilityLearning) {
-                ((SecondMomentProbabilityTree) probabilityTree).LearnProbabilities();
+                ((SecondMomentTree) probabilityTree).LearnProbabilities();
             }
             base.OnPostIteration(iterIdx);
         }
