@@ -32,16 +32,16 @@ public class RootAdaptiveTree : AccumulatingTree {
             float estimate = sample.RadianceEstimate.Average;
             if (estimate == 0.0f || sample.GuidePdf == 0.0f) continue;
 
-            // Compute first and second derivative of a single sample
+            // Compute the contributions to the first and second derivative of a single sample
             float estimateSquared = estimate * estimate;
             float diff = sample.BsdfPdf - sample.GuidePdf;
-            float samplePdfCube = MathF.Pow(sample.SamplePdf, 3.0f);
+            float samplePdfCubed = MathF.Pow(sample.SamplePdf, 3.0f);
 
             float firstDerivSample = estimateSquared * diff;
             float secondDerivSample = firstDerivSample * diff;
 
-            firstDeriv += firstDerivSample / samplePdfCube;
-            secondDeriv += secondDerivSample / (samplePdfCube * sample.SamplePdf);
+            firstDeriv += firstDerivSample / samplePdfCubed;
+            secondDeriv += secondDerivSample / (samplePdfCubed * sample.SamplePdf);
         }            
         
         // Average over all samples

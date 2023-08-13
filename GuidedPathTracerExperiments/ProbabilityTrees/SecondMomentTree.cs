@@ -30,7 +30,6 @@ public class SecondMomentTree : AccumulatingTree {
     protected override void LearnProbability() {
         // Implementation of Algorithm 1 from the paper
         // Some computations are reordered to allow reusage of interim results
-        float count = samples.Count;
         if (samples.Count == 0) return;
         float[] secondMoments = new float[strategies.Length];
         float bsdfProbability = 1.0f - guidingProbability;
@@ -45,19 +44,11 @@ public class SecondMomentTree : AccumulatingTree {
             float weightProxyGuide = 0.5f * sample.GuidePdf / combinedPdfs;
 
             float correctionNumerator = bsdfProbability * weightProxyBsdf + guidingProbability * weightProxyGuide;
-
-            // Balance heuristic for both methods
-            float balanceBsdf = bsdfProbability * sample.BsdfPdf / sample.SamplePdf;
-            float balanceGuide = guidingProbability * sample.GuidePdf / sample.SamplePdf;
-
-            // Resulting estimates when using either BSDF sampling vs. path guiding
-            float estimateBsdf = balanceBsdf * estimate / (count * sample.BsdfPdf);
-            float estimateGuide = balanceGuide * estimate / (count * sample.GuidePdf);
+            float estimateWeighted = estimate / sample.SamplePdf;
 
             for (int i = 0; i < strategies.Length; i++) {
                 float correction = correctionNumerator / ((1.0f - strategies[i]) * weightProxyBsdf + strategies[i] * weightProxyGuide);
-                secondMoments[i] += estimateBsdf * estimateBsdf * correction;
-                secondMoments[i] += estimateGuide * estimateGuide * correction;
+                secondMoments[i] += estimateWeighted * estimateWeighted * correction;
             }
         }
             

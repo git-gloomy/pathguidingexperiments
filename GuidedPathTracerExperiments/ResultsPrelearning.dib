@@ -16,7 +16,7 @@ open Plotly.NET
 
 #!fsharp
 
-let sceneName = "RoughGlassesIndirect"
+let sceneName = "IndirectRoom"
 let path = ("Results/" + sceneName + "/Prelearned")
 let reference = new RgbImage("Results/" + sceneName + "/Reference.exr")
 
@@ -27,6 +27,7 @@ let renderTime method =
     let doc = System.Text.Json.JsonDocument.Parse(json)
     doc.RootElement.GetProperty("RenderTime").GetDouble()
 Map [
+    ("Guided path tracing (0.5)", 0.001 * renderTime "PathGuiding05")
     ("Guided path tracing (Kullback-Leibler)", 0.001 * renderTime "KullbackLeibler")
     ("Guided path tracing (Root Adaptive)", 0.001 * renderTime "RootAdaptive")
     ("Guided path tracing (Second Moment)", 0.001 * renderTime "SecondMoment")
@@ -35,14 +36,15 @@ Map [
 #!fsharp
 
 Map [
-    ("KullbackLeibler" , Metrics.RelMSE_OutlierRejection(new RgbImage(path + "/KullbackLeibler/Render.exr"), reference, 0.01f))
-    ("RootAdaptive" , Metrics.RelMSE_OutlierRejection(new RgbImage(path + "/RootAdaptive/Render.exr"), reference, 0.01f))
-    ("SecondMoment" , Metrics.RelMSE_OutlierRejection(new RgbImage(path + "/SecondMoment/Render.exr"), reference, 0.01f))
+    ("Guided path tracing (0.5)", Metrics.RelMSE_OutlierRejection(new RgbImage(path + "/PathGuiding05/Render.exr"), reference, 0.01f))
+    ("Guided path tracing (Kullback-Leibler)", Metrics.RelMSE_OutlierRejection(new RgbImage(path + "/KullbackLeibler/Render.exr"), reference, 0.01f))
+    ("Guided path tracing (Root Adaptive)", Metrics.RelMSE_OutlierRejection(new RgbImage(path + "/RootAdaptive/Render.exr"), reference, 0.01f))
+    ("Guided path tracing (Second Moment)", Metrics.RelMSE_OutlierRejection(new RgbImage(path + "/SecondMoment/Render.exr"), reference, 0.01f))
 ]
 
 #!fsharp
 
-let relMSE method ignore =
+let relMSE method ignore limit =
     let json = System.IO.File.ReadAllText(path + $"/{method}/Render.json")
     let doc = System.Text.Json.JsonDocument.Parse(json)
     let errors = doc.RootElement.GetProperty("ErrorMetrics").EnumerateArray()
@@ -50,27 +52,27 @@ let relMSE method ignore =
     let mutable count = 1
     let mutable ignore_count = 1
     for e in errors do
-        if ignore_count > ignore then
+        if ignore_count > ignore && count <= limit then
             map <- map.Add(count, e.GetProperty("RelMSE_Outlier").GetDouble())
             count <- count + 1
         ignore_count <- ignore_count + 1
     map
 
-let pt = relMSE "PathTracing" 0
-let gpt = relMSE "PathGuiding" 0
-let gpt02 = relMSE "PathGuiding02" 0
-let gpt08 = relMSE "PathGuiding08" 0
-let ra = relMSE "RootAdaptive" 25
-let kl = relMSE "KullbackLeibler" 25
-let sm = relMSE "SecondMoment" 25
+let pt = relMSE "PathTracing" 0 50
+let gpt01 = relMSE "PathGuiding01" 0 50
+let gpt05 = relMSE "PathGuiding05" 0 50
+let gpt09 = relMSE "PathGuiding09" 0 50
+let ra = relMSE "RootAdaptive" 25 50
+let kl = relMSE "KullbackLeibler" 25 50 
+let sm = relMSE "SecondMoment" 25 50
 
 let layout = Layout.init(Height = 1, Width = 4)
 let combine = 
     [   
         //Chart.Line(Seq.cast(pt.Keys), Seq.cast(pt.Values), Name = "Path Tracer")
-        Chart.Line(Seq.cast(gpt02.Keys), Seq.cast(gpt02.Values), Name = "Guided Path Tracer (0.2)")
-        Chart.Line(Seq.cast(gpt.Keys), Seq.cast(gpt.Values), Name = "Guided Path Tracer (0.5)")
-        Chart.Line(Seq.cast(gpt08.Keys), Seq.cast(gpt08.Values), Name = "Guided Path Tracer (0.8)")
+        Chart.Line(Seq.cast(gpt01.Keys), Seq.cast(gpt01.Values), Name = "Guided Path Tracer (0.1)")
+        Chart.Line(Seq.cast(gpt05.Keys), Seq.cast(gpt05.Values), Name = "Guided Path Tracer (0.5)")
+        Chart.Line(Seq.cast(gpt09.Keys), Seq.cast(gpt09.Values), Name = "Guided Path Tracer (0.9)")
         Chart.Line(Seq.cast(ra.Keys), Seq.cast(ra.Values), Name = "Root Adaptive")
         Chart.Line(Seq.cast(kl.Keys), Seq.cast(kl.Values), Name = "Kullback Leibler")
         Chart.Line(Seq.cast(sm.Keys), Seq.cast(sm.Values), Name = "Second Moment") 

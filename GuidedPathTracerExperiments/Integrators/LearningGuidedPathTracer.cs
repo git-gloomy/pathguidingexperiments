@@ -11,6 +11,7 @@ using SimpleImageIO;
 using TinyEmbree;
 using GuidedPathTracerExperiments.ProbabilityTrees;
 using SeeSharp.Sampling;
+using SeeSharp.Shading.Materials;
 
 namespace GuidedPathTracerExperiments.Integrators {
 
@@ -38,6 +39,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected List<SingleIterationLayer> iterationRenderings = new();
         protected List<SingleIterationLayer> iterationCacheVisualizations = new();
         protected List<SingleIterationLayer> guidingProbabilityVisualizations = new();
+        protected List<SingleIterationLayer> guidingProbabilityVisualizationsT = new();
 
         // Used internally to determine whether samples should be splat into the probability tree
         protected bool enableProbabilityLearning = true;
@@ -117,7 +119,9 @@ namespace GuidedPathTracerExperiments.Integrators {
             if (Settings.IncludeDebugVisualizations) {
                 for (int i = Settings.DebugVisualizationInterval; i < TotalSpp; i += Settings.DebugVisualizationInterval) {
                     guidingProbabilityVisualizations.Add(new());
+                    guidingProbabilityVisualizationsT.Add(new());
                     scene.FrameBuffer.AddLayer($"guidingProbability{i:0000}", guidingProbabilityVisualizations[^1]);
+                    scene.FrameBuffer.AddLayer($"guidingProbabilityTransmissive{i:0000}", guidingProbabilityVisualizationsT[^1]);
                 }
             }
 
@@ -183,7 +187,7 @@ namespace GuidedPathTracerExperiments.Integrators {
 
                     // Assign a color to this region based on its hash code
                     int hash = region.GetHashCode();
-                    System.Random colorRng = new(hash);
+                    Random colorRng = new(hash);
                     float hue = (float)colorRng.Next(360);
                     float saturation = (float)colorRng.NextDouble() * 0.8f + 0.2f;
 
@@ -193,6 +197,7 @@ namespace GuidedPathTracerExperiments.Integrators {
                 }
             }
 
+            // Visualize the guiding probabilities
             if (Settings.IncludeDebugVisualizations && state.Depth == 1) {
                 int iterationsSinceUpdate = (int) iterIdx % Settings.DebugVisualizationInterval;
                 if(iterationsSinceUpdate == 0 && iterIdx != 0) {
@@ -202,8 +207,40 @@ namespace GuidedPathTracerExperiments.Integrators {
                         hit ? 0.5f - float.Abs(p - 0.5f) : 0, 
                         hit ? 1.0f - p : 0
                     );
+
+                    Material mat = ((SurfacePoint) hit).Material;
+                    if(mat.IsTransmissive(hit) || mat.GetRoughness(hit) < 0.1f) probabilityColor = new(0);
+
                     guidingProbabilityVisualizations[((int) iterIdx / Settings.DebugVisualizationInterval) - 1]
                         .Splat(state.Pixel.Col, state.Pixel.Row, probabilityColor);
+
+                    // If the material is transmissive, we render the object behind it into another debug view
+                    if(!mat.IsTransmissive(hit)) return;
+                    RgbColor probabilityColorT = new(0);
+                    Hit hitT = hit;
+                    Ray rayT = ray;
+
+                    // Limit the number of tramsmissive objects we can pass to 4
+                    for(int i = 0; i < 4; i++) {
+                        // Trace new ray
+                        rayT = Raytracer.SpawnRay(hitT, rayT.Direction);
+                        hitT = scene.Raytracer.Trace(rayT);
+                        if(!hitT) break;
+
+                        mat = ((SurfacePoint) hitT).Material;
+                        if(mat.IsTransmissive(hitT) || mat.GetRoughness(hitT) < 0.1f) continue;
+                        
+                        p = probabilityTree.GetProbability(hitT.Position);
+                        probabilityColorT = new(
+                            hit ? p : 0, 
+                            hit ? 0.5f - float.Abs(p - 0.5f) : 0, 
+                            hit ? 1.0f - p : 0
+                        );
+                        break;
+                    }
+
+                    guidingProbabilityVisualizationsT[((int) iterIdx / Settings.DebugVisualizationInterval) - 1]
+                        .Splat(state.Pixel.Col, state.Pixel.Row, probabilityColorT);
                 }                
             }
         }
