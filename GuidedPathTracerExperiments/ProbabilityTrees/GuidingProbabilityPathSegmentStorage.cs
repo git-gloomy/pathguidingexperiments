@@ -36,6 +36,11 @@ namespace GuidedPathTracerExperiments.ProbabilityTrees {
         }
 
         public void EvaluatePath(GuidingProbabilityTree tree) {
+            if(tree.IsFrozen) {
+                LastSegment = null;
+                this.idx = 0;
+                return;
+            }
             // The following way of computing the contribution of individual path segments is a
             // simplified version of the logic used by OpenPGL's PathSegmentStorage
             for (int i = idx - 2; i >= 0; i--) {

@@ -41,8 +41,6 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected List<SingleIterationLayer> guidingProbabilityVisualizations = new();
         protected List<SingleIterationLayer> guidingProbabilityVisualizationsT = new();
 
-        // Used internally to determine whether samples should be splat into the probability tree
-        protected bool enableProbabilityLearning = true;
         // Used internally to determine whether to use the initial guiding probability or take it from the probability tree
         protected bool useLearnedProbabilities = false;
         // 0-based index of the current iteration
@@ -125,7 +123,7 @@ namespace GuidedPathTracerExperiments.Integrators {
                 }
             }
 
-            if (0 >= Settings.LearnUntil) enableProbabilityLearning = false;
+            if (0 >= Settings.LearnUntil) probabilityTree.Freeze();
             if (0 >= Settings.FixProbabilityUntil) useLearnedProbabilities = true;
 
             base.OnPrepareRender();
@@ -146,7 +144,7 @@ namespace GuidedPathTracerExperiments.Integrators {
 
         protected override void OnPostIteration(uint iterIdx) {
             uint nextIdx = iterIdx + 1;
-            if (nextIdx >= Settings.LearnUntil) enableProbabilityLearning = false;
+            if (nextIdx >= Settings.LearnUntil) probabilityTree.Freeze();
             if (nextIdx == Settings.FixProbabilityUntil) scene.FrameBuffer.Reset();
             if (nextIdx >= Settings.FixProbabilityUntil) useLearnedProbabilities = true;
 
@@ -419,8 +417,7 @@ namespace GuidedPathTracerExperiments.Integrators {
             if (Settings.GuidingFieldLearningEnabled) 
                 sampleStorage.AddSamples(pathSegmentStorage.Value.SamplesRawPointer, num);
 
-            if (enableProbabilityLearning) probPathSegmentStorage.Value.EvaluatePath(probabilityTree);
-            else probPathSegmentStorage.Value.Clear();
+            probPathSegmentStorage.Value.EvaluatePath(probabilityTree);
         }
     }
 }

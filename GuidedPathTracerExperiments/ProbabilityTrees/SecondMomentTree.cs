@@ -43,7 +43,7 @@ public class SecondMomentTree : AccumulatingTree {
             float weightProxyBsdf = 0.5f * sample.BsdfPdf / combinedPdfs;
             float weightProxyGuide = 0.5f * sample.GuidePdf / combinedPdfs;
 
-            float correctionNumerator = bsdfProbability * weightProxyBsdf + guidingProbability * weightProxyGuide;
+            float correctionNumerator = bsdfProbability * weightProxyBsdf + guidingProbability  * weightProxyGuide;
             float estimateWeighted = estimate / sample.SamplePdf;
 
             for (int i = 0; i < strategies.Length; i++) {

@@ -22,7 +22,7 @@ namespace GuidedPathTracerExperiments.Integrators {
         protected override void OnPostIteration(uint iterIdx) {
             // Update guiding probability tree every ProbabilityLearningInterval iterations
             int iterationsSinceUpdate = ((int) iterIdx + 1) % Settings.LearnInterval;
-            if(iterationsSinceUpdate == 0 && iterIdx + 1 != TotalSpp && enableProbabilityLearning) {
+            if(iterationsSinceUpdate == 0 && iterIdx + 1 != TotalSpp) {
                 ((RootAdaptiveTree) probabilityTree).LearnProbabilities();
             }
             base.OnPostIteration(iterIdx);

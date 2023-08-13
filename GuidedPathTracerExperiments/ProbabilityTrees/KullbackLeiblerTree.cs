@@ -31,6 +31,7 @@ public class KullbackLeiblerTree : GuidingProbabilityTree {
 
     // An Adam step is executed for each sample, minimizing the Kullback-Leibler divergence
     public override void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate) {
+        if(IsFrozen) return;
         if (!isLeaf) {
             ((KullbackLeiblerTree) childNodes[GetChildIdx(position)])
                 .AddSampleData(position, guidePdf, bsdfPdf, samplePdf, radianceEstimate);

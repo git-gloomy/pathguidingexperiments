@@ -15,6 +15,7 @@ public abstract class GuidingProbabilityTree {
 
     protected Vector3 splitCoordinates, lowerBounds, upperBounds;
     protected bool isLeaf = true;
+    public bool IsFrozen { private set; get; }
 
     public GuidingProbabilityTree(Vector3 lowerBounds, Vector3 upperBounds, int splitMargin) {
         this.lowerBounds = lowerBounds;
@@ -32,6 +33,13 @@ public abstract class GuidingProbabilityTree {
     /// Traverses the tree and adds the given data to a leaf node, which processes or stores it for learning.
     /// </summary>
     public abstract void AddSampleData(Vector3 position, float guidePdf, float bsdfPdf, float samplePdf, RgbColor radianceEstimate);
+
+    /// <summary>
+    /// After executing this method, no further changes can be made to the guiding probability.
+    /// </summary>
+    public void Freeze() {
+        IsFrozen = true;
+    }
 
     /// <summary>
     /// Gets the index of the child node corresponding to the <paramref name="point"/> in <see cref="childNodes"/>.
