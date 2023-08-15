@@ -16,7 +16,7 @@ open Plotly.NET
 
 #!fsharp
 
-let sceneName = "IndirectRoom"
+let sceneName = "Pool"
 let path = ("Results/" + sceneName + "/Prelearned")
 let reference = new RgbImage("Results/" + sceneName + "/Reference.exr")
 
@@ -58,21 +58,21 @@ let relMSE method ignore limit =
         ignore_count <- ignore_count + 1
     map
 
-let pt = relMSE "PathTracing" 0 50
-let gpt01 = relMSE "PathGuiding01" 0 50
-let gpt05 = relMSE "PathGuiding05" 0 50
-let gpt09 = relMSE "PathGuiding09" 0 50
-let ra = relMSE "RootAdaptive" 25 50
-let kl = relMSE "KullbackLeibler" 25 50 
-let sm = relMSE "SecondMoment" 25 50
+//let pt = relMSE "PathTracing" 0 125
+let gpt01 = relMSE "PathGuiding02" 0 125
+let gpt05 = relMSE "PathGuiding05" 0 125
+let gpt09 = relMSE "PathGuiding08" 0 125
+let ra = relMSE "RootAdaptive" 25 125
+let kl = relMSE "KullbackLeibler" 25 125 
+let sm = relMSE "SecondMoment" 25 125
 
 let layout = Layout.init(Height = 1, Width = 4)
 let combine = 
     [   
         //Chart.Line(Seq.cast(pt.Keys), Seq.cast(pt.Values), Name = "Path Tracer")
-        Chart.Line(Seq.cast(gpt01.Keys), Seq.cast(gpt01.Values), Name = "Guided Path Tracer (0.1)")
+        Chart.Line(Seq.cast(gpt01.Keys), Seq.cast(gpt01.Values), Name = "Guided Path Tracer (0.2)")
         Chart.Line(Seq.cast(gpt05.Keys), Seq.cast(gpt05.Values), Name = "Guided Path Tracer (0.5)")
-        Chart.Line(Seq.cast(gpt09.Keys), Seq.cast(gpt09.Values), Name = "Guided Path Tracer (0.9)")
+        Chart.Line(Seq.cast(gpt09.Keys), Seq.cast(gpt09.Values), Name = "Guided Path Tracer (0.8)")
         Chart.Line(Seq.cast(ra.Keys), Seq.cast(ra.Values), Name = "Root Adaptive")
         Chart.Line(Seq.cast(kl.Keys), Seq.cast(kl.Values), Name = "Kullback Leibler")
         Chart.Line(Seq.cast(sm.Keys), Seq.cast(sm.Values), Name = "Second Moment") 
@@ -80,6 +80,7 @@ let combine =
     |> Chart.combine
     |> Chart.withLayout(layout)
     |> Chart.withTitle(sceneName + ": Relative Mean Squared Error")
+    //|> Chart.withYAxis(LayoutObjects.LinearAxis.init(AxisType=StyleParam.AxisType.Log))
     |> Chart.show
 
 #!markdown
@@ -89,6 +90,7 @@ let combine =
 #!fsharp
 
 FlipBook.New
+    .Add("Guided path tracing (0.5)", new RgbImage(path + "/PathGuiding05/Render.exr"))
     .Add("Guided path tracing (Kullback-Leibler)", new RgbImage(path + "/KullbackLeibler/Render.exr"))
     .Add("Guided path tracing (root adaptive)", new RgbImage(path + "/RootAdaptive/Render.exr"))
     .Add("Guided path tracing (second moment)", new RgbImage(path + "/SecondMoment/Render.exr"))
@@ -102,6 +104,7 @@ FlipBook.New
 
 FlipBook.New
     .WithToneMapper(FlipBook.InitialTMO.FalseColor(0.0f, 0.1f, false))
+    .Add("Guided path tracing (0.5)", Metrics.RelMSEImage(new RgbImage(path + "/PathGuiding05/Render.exr"), reference))
     .Add("Guided path tracing (Kullback-Leibler)", Metrics.RelMSEImage(new RgbImage(path + "/KullbackLeibler/Render.exr"), reference))
     .Add("Guided path tracing (root adaptive)", Metrics.RelMSEImage(new RgbImage(path + "/RootAdaptive/Render.exr"), reference))
     .Add("Guided path tracing (second moment)", Metrics.RelMSEImage(new RgbImage(path + "/SecondMoment/Render.exr"), reference))

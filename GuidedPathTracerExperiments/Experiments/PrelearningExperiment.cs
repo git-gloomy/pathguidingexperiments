@@ -22,16 +22,19 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
 
         this.settingsLearningEnabled = new() {
             IncludeDebugVisualizations = true,
+            DebugVisualizationInterval = learningSamples + renderSamples - 1,   // Only visualize once
             LearnInterval = learningSamples,
             GuidingFieldLearningEnabled = false,
             LearnUntil = learningSamples,
             FixProbabilityUntil = learningSamples,
+            RNGOffset = 12345,
         };
 
         this.settingsLearningDisabled = new(settingsLearningEnabled) { 
+            DebugVisualizationInterval = renderSamples - 1,
             LearnUntil = 0,
             FixProbabilityUntil = renderSamples,
-            RNGOffset = (uint) learningSamples,
+            RNGOffset = (uint) (12345 + learningSamples),
         };
     }
 
@@ -56,11 +59,11 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
                 InitialGuidingProbability = 0,
             },
         }),
-        new Method("Prelearned/PathGuiding01", new RootAdaptiveGuidedPathTracer() {
+        new Method("Prelearned/PathGuiding02", new RootAdaptiveGuidedPathTracer() {
             TotalSpp = renderSamples,
             GuidingField = guidingField,
             Settings = new(settingsLearningDisabled) { 
-                InitialGuidingProbability = 0.1f,
+                InitialGuidingProbability = 0.2f,
             },
         }),
         new Method("Prelearned/PathGuiding05", new RootAdaptiveGuidedPathTracer() {
@@ -70,11 +73,11 @@ public class PrelearningExperiment : SeeSharp.Experiments.Experiment {
                 InitialGuidingProbability = 0.5f,
             },
         }),
-        new Method("Prelearned/PathGuiding09", new RootAdaptiveGuidedPathTracer() {
+        new Method("Prelearned/PathGuiding08", new RootAdaptiveGuidedPathTracer() {
             TotalSpp = renderSamples,
             GuidingField = guidingField,
             Settings = new(settingsLearningDisabled) { 
-                InitialGuidingProbability = 0.9f,
+                InitialGuidingProbability = 0.8f,
             },
         }),
         new Method("Prelearned/RootAdaptive", new RootAdaptiveGuidedPathTracer() {
